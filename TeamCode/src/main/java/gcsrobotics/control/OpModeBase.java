@@ -35,4 +35,8 @@ public abstract class OpModeBase extends LinearOpMode {
         }
     }
 
+    protected double getX() {return follower.getPose().getX();}
+    protected double getY() {return follower.getPose().getY();}
+    protected double getHeading() {return follower.getPose().getHeading();}
+
 }

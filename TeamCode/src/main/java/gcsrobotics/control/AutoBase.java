@@ -19,6 +19,7 @@ public abstract class AutoBase extends OpModeBase {
     @Override
     protected void loopInternal() {
         commandRunner.update();
+        runLoop();
     }
 
 }
