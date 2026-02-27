@@ -2,7 +2,9 @@ package gcsrobotics.control;
 
 import com.pedropathing.follower.Follower;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.Servo;
 
 import gcsrobotics.pedroPathing.Constants;
 import gcsrobotics.vertices.CommandRunner;
@@ -15,15 +17,9 @@ public abstract class OpModeBase extends LinearOpMode {
     protected abstract void initInternal();
     protected abstract void loopInternal();
 
-    /*eg.*/ public DcMotorEx flywheel;
-    /*eg.*/ public DcMotorEx intake;
-
     @Override
     public void runOpMode() {
-
-        /* eg.*/ flywheel = hardwareMap.get(DcMotorEx.class, "flywheel");
-        /* eg.*/ intake = hardwareMap.get(DcMotorEx.class, "intake");
-
+        initHardware();
         follower = Constants.createFollower(hardwareMap);
         initInternal();
 
@@ -33,6 +29,15 @@ public abstract class OpModeBase extends LinearOpMode {
             telemetry.update();
             loopInternal();
         }
+    }
+
+    /*eg.*/ public DcMotorEx flywheel;
+    /*eg.*/ public DcMotorEx intake;
+    /*eg.*/ public Servo servo;
+    /*eg.*/ public CRServo crServo;
+    private void initHardware(){
+        /* eg.*/ flywheel = hardwareMap.get(DcMotorEx.class, "flywheel");
+        /* eg.*/ intake = hardwareMap.get(DcMotorEx.class, "intake");
     }
 
     protected double getX() {return follower.getPose().getX();}

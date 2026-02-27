@@ -24,5 +24,7 @@ public class Shoot implements Command {
         if (shotTimer.milliseconds() >= SHOT_TIME_MS) robot.flywheel.setVelocity(0);
     }
 
-    public boolean isFinished() {return shotTimer.milliseconds() >= SHOT_TIME_MS;}
+    public boolean isFinished() {
+        return shotTimer.milliseconds() >= SHOT_TIME_MS;
+    }
 }

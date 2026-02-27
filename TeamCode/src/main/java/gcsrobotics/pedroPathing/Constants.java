@@ -31,4 +31,6 @@ public class Constants {
                 .pinpointLocalizer(localizerConstants)
                 .build();
     }
+
+    public static double INTAKE_VELOCITY = 1000;
 }
