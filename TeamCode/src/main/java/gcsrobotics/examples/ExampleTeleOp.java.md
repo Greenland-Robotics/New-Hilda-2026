@@ -1,7 +1,7 @@
+```java
 package gcsrobotics.opmode;
 
 import com.pedropathing.geometry.Pose;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import gcsrobotics.commands.FollowPath;
@@ -13,7 +13,6 @@ import gcsrobotics.vertices.SeriesCommand;
 import gcsrobotics.vertices.SleepCommand;
 
 @TeleOp(name="Example TeleOp")
-@Disabled
 public class ExampleTeleOp extends TeleOpBase {
     private boolean driveMode = true;
     private ButtonAction pathToCenter, shotSequence;
@@ -53,3 +52,4 @@ public class ExampleTeleOp extends TeleOpBase {
         shotSequence.update(gamepad2.a);
     }
 }
+```

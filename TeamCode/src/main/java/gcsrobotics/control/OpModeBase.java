@@ -31,13 +31,9 @@ public abstract class OpModeBase extends LinearOpMode {
         }
     }
 
-    /*eg.*/ public DcMotorEx flywheel;
-    /*eg.*/ public DcMotorEx intake;
-    /*eg.*/ public Servo servo;
-    /*eg.*/ public CRServo crServo;
-    private void initHardware(){
-        /* eg.*/ flywheel = hardwareMap.get(DcMotorEx.class, "flywheel");
-        /* eg.*/ intake = hardwareMap.get(DcMotorEx.class, "intake");
+    // declare hardware here
+    private void initHardware() {
+        // init hardware here
     }
 
     protected double getX() {return follower.getPose().getX();}

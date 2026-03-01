@@ -1,3 +1,4 @@
+```java
 package gcsrobotics.opmode;
 
 import com.pedropathing.follower.Follower;
@@ -6,7 +7,6 @@ import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
 import gcsrobotics.commands.FollowPath;
 import gcsrobotics.commands.Shoot;
@@ -20,7 +20,6 @@ import gcsrobotics.vertices.SeriesCommand;
 
 
 @Autonomous(name="Example Auto")
-@Disabled
 public class ExampleAuto extends AutoBase {
     private Command shootPreload, intakeLine1, shootIntake;
     private Paths paths;
@@ -103,3 +102,4 @@ public class ExampleAuto extends AutoBase {
 
 
 }
+```
