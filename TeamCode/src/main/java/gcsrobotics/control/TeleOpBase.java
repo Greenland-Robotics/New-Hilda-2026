@@ -12,7 +12,6 @@ public abstract class TeleOpBase extends OpModeBase {
 
     @Override
     protected void initInternal() {
-        INSTANCE = this;
         initialize();
         follower.startTeleOpDrive();
     }

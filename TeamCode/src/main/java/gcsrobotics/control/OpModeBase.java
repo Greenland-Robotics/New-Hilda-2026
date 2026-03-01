@@ -2,9 +2,6 @@ package gcsrobotics.control;
 
 import com.pedropathing.follower.Follower;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.hardware.CRServo;
-import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.Servo;
 
 import gcsrobotics.pedroPathing.Constants;
 import gcsrobotics.vertices.CommandRunner;
@@ -21,6 +18,7 @@ public abstract class OpModeBase extends LinearOpMode {
     public void runOpMode() {
         initHardware();
         follower = Constants.createFollower(hardwareMap);
+        INSTANCE = this;
         initInternal();
 
         waitForStart();

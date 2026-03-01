@@ -10,9 +10,8 @@ public abstract class AutoBase extends OpModeBase {
 
     @Override
     protected void initInternal() {
-        INSTANCE = this;
-        buildCommands();
         initialize();
+        buildCommands();
         commandRunner.start();
     }
 
