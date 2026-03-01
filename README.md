@@ -52,6 +52,11 @@ Setting up a new project is very easy — just follow these steps and you are re
 
 ---
 
+# WARNING: Do NOT write `while` loops
+Code that is written inside functions with `loop` in their name(`runLoop()`, `loop()`, etc.) are **automatically** run inside the main loop.
+You do NOT have to write a `while (opModeIsActive) {...}` inside of them. Doing so will break the functionality of the entire framework. 
+It is exceedingly rare that you would ever have to write one, if at all
+
 # Method Documentation
 This documentation covers all classes and methods relevant to writing opmodes with this framework.
 
