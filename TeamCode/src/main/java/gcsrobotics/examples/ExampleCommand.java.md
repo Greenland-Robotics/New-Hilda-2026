@@ -1,3 +1,4 @@
+```java  
 package gcsrobotics.commands;
 
 import gcsrobotics.control.OpModeBase;
@@ -21,3 +22,4 @@ public class ExampleCommand implements Command {
         return true; // replace `true` with the condition for when the command should end
     }
 }
+```
