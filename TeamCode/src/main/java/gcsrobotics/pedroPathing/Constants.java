@@ -17,12 +17,10 @@ public class Constants {
 
     public static MecanumConstants driveConstants = new MecanumConstants()
             .maxPower(1)
-            // These should match your hardware config
             .rightFrontMotorName("fr")
             .rightRearMotorName("br")
             .leftRearMotorName("bl")
             .leftFrontMotorName("fl")
-            // This is where you can change the directions of motors if necessary
             .leftFrontMotorDirection(DcMotorSimple.Direction.REVERSE)
             .leftRearMotorDirection(DcMotorSimple.Direction.REVERSE)
             .rightFrontMotorDirection(DcMotorSimple.Direction.FORWARD)
@@ -48,5 +46,64 @@ public class Constants {
                 .build();
     }
 
-//    eg. public static double INTAKE_VELOCITY = 1000;
+    // =====================================================
+    // ROBOT SUBSYSTEM CONSTANTS
+    // =====================================================
+
+    // ---- Kickstand (CRServo — runs while button held) ----
+    public static class Kickstand {
+        public static final double DEPLOY_POWER  =  1.0;
+        public static final double RETRACT_POWER = -1.0;
+        public static final String MOTOR_NAME    = "kickstand";
+    }
+
+    // ---- Gate (Standard Servo) ----
+    public static class Gate {
+        public static final double OPEN_POSITION  = 0.4;
+        public static final double CLOSE_POSITION = 1.0;
+    }
+
+    // ---- Hood (Axon MAX servo — alliance-independent) ----
+    public static class Hood {
+        public static final double CLOSE  = 0.10;
+        public static final double MEDIUM = 0.25;
+        public static final double TOP    = 0.40;
+        public static final double FAR    = 0.55;
+    }
+
+    // ---- Flywheel (dual goBILDA 6000 RPM, shared shaft) ----
+    // Velocities in rad/sec — use with setVelocity(v, AngleUnit.RADIANS)
+    // PIDF starting values: tune F first on FTC Dashboard, then P
+    // ⚠️  FAR (4200 RPM) likely exceeds motor max under load — confirm on hardware
+    public static class Flywheel {
+        public static final double PIDF_F = 11.7;
+        public static final double PIDF_P = 0.5;
+        public static final double PIDF_I = 0.0;
+        public static final double PIDF_D = 0.0;
+
+        // Target velocities in rad/sec
+        public static final double VELOCITY_CLOSE  = 251.3;  // 2400 RPM
+        public static final double VELOCITY_MEDIUM = 314.2;  // 3000 RPM
+        public static final double VELOCITY_TOP    = 377.0;  // 3600 RPM
+        public static final double VELOCITY_FAR    = 439.8;  // 4200 RPM ⚠️ TBD
+
+        // Gate timing relative to flywheel readiness
+        public static final double RPM_THRESHOLD     = 0.95; // 95% of target before firing
+        public static final long   FLYWHEEL_TIMEOUT_MS = 3000;
+        public static final long   SHOOT_DURATION_MS   = 3000; // TODO: tune
+    }
+
+    // ---- Intake ----
+    public static class Intake {
+        public static final double FORWARD_POWER = 1.0;
+        public static final double REVERSE_POWER = -1.0;
+    }
+
+    // ---- Snap/Field Positions ----
+    public static class SnapPositions {
+        // TODO: populate with real field coordinates after Pedro tuning
+        public static final double PLACEHOLDER_X       = 0.0;
+        public static final double PLACEHOLDER_Y       = 0.0;
+        public static final double PLACEHOLDER_HEADING = 0.0;
+    }
 }
