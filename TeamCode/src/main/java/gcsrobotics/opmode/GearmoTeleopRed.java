@@ -197,9 +197,6 @@ public class GearmoTeleopRed extends TeleOpBase {
             robot.gateServo.setPosition(Constants.Gate.CLOSE_POSITION);
         }
 
-        // Tick the command runner every loop
-        commandRunner.update();
-
         // Telemetry
         telemetry.addData("Alliance",         isBlue ? "BLUE" : "RED");
         telemetry.addData("Hood Position",    currentPosition);
