@@ -1,12 +1,10 @@
 package gcsrobotics.commands;
 
 import gcsrobotics.vertices.Command;
-import gcsrobotics.pedroPathing.Constants;
 
 public class RetractKickstandCommand implements Command {
 
     private final KickstandSubsystem kickstand;
-    private long startTime;
 
     public RetractKickstandCommand(KickstandSubsystem kickstand) {
         this.kickstand = kickstand;
@@ -14,17 +12,17 @@ public class RetractKickstandCommand implements Command {
 
     @Override
     public void init() {
-        startTime = System.currentTimeMillis();
         kickstand.retract();
     }
 
     @Override
     public void loop() {
-        // motor is already running, nothing to update each loop
+        // servo runs continuously while button held — nothing to update
     }
 
     @Override
     public boolean isFinished() {
-        return System.currentTimeMillis() - startTime >= Constants.Kickstand.RETRACT_TIME_MS;
+        // never self-terminates — ButtonAction cancels this when button is released
+        return false;
     }
 }

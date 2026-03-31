@@ -1,5 +1,7 @@
 package gcsrobotics.commands;
 
+import java.util.function.Supplier;
+
 import gcsrobotics.control.OpModeBase;
 import gcsrobotics.pedroPathing.Constants;
 import gcsrobotics.vertices.AwaitCommand;
@@ -8,17 +10,20 @@ import gcsrobotics.vertices.InstantCommand;
 import gcsrobotics.vertices.SeriesCommand;
 import gcsrobotics.vertices.SleepCommand;
 
-public class Shoot implements Command {
-    private final OpModeBase robot = OpModeBase.INSTANCE;
-    private final ShootingPosition position;
+public class ShootCurrent implements Command {
+    private final Supplier<ShootingPosition> positionSupplier;
     private SeriesCommand sequence;
 
-    public Shoot(ShootingPosition position) {
-        this.position = position;
+    public ShootCurrent(Supplier<ShootingPosition> positionSupplier) {
+        this.positionSupplier = positionSupplier;
     }
 
     @Override
     public void init() {
+        // Read currentPosition at the moment the button is pressed
+        ShootingPosition position = positionSupplier.get();
+        OpModeBase robot = OpModeBase.INSTANCE;
+
         sequence = new SeriesCommand(
                 // Step 1: spin up flywheels to target velocity and set hood angle
                 new InstantCommand(() -> {

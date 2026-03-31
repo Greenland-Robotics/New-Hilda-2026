@@ -6,7 +6,6 @@ import gcsrobotics.pedroPathing.Constants;
 public class DeployKickstandCommand implements Command {
 
     private final KickstandSubsystem kickstand;
-    private long startTime;
 
     public DeployKickstandCommand(KickstandSubsystem kickstand) {
         this.kickstand = kickstand;
@@ -14,17 +13,17 @@ public class DeployKickstandCommand implements Command {
 
     @Override
     public void init() {
-        startTime = System.currentTimeMillis();
         kickstand.deploy();
     }
 
     @Override
     public void loop() {
-        // motor is already running, nothing to update each loop
+        // motor runs continuously while button held — nothing to update
     }
 
     @Override
     public boolean isFinished() {
-        return System.currentTimeMillis() - startTime >= Constants.Kickstand.DEPLOY_TIME_MS;
+        // never self-terminates — ButtonAction cancels this when button is released
+        return false;
     }
 }
