@@ -7,12 +7,8 @@ import gcsrobotics.vertices.InstantCommand;
 import gcsrobotics.vertices.SeriesCommand;
 
 public class Park implements Command {
-    private final SeriesCommand sequence;
-
-    // =====================================================
-    // TODO: Replace all 0.0 values with real field coordinates
-    // from the Localization Test in your Tuning OpMode
-    // =====================================================
+    private SeriesCommand sequence;
+    private final Pose targetPose;
 
     private static final Pose PARK_POSE_BLUE = new Pose(
             0.0,    // TODO: tune X position
@@ -27,20 +23,22 @@ public class Park implements Command {
     );
 
     public Park(boolean isBlue) {
-        Pose targetPose = isBlue ? PARK_POSE_BLUE : PARK_POSE_RED;
+        this.targetPose = isBlue ? PARK_POSE_BLUE : PARK_POSE_RED;
+    }
 
+    @Override
+    public void init() {
         sequence = new SeriesCommand(
-                new FollowPath(targetPose),
+                new FollowPath(
+                        OpModeBase.INSTANCE.follower.getPose(),
+                        targetPose
+                ),
                 new InstantCommand(() -> {
                     OpModeBase.INSTANCE.intakeMotor.setPower(0);
                     OpModeBase.INSTANCE.setFlywheelVelocity(0);
                     OpModeBase.INSTANCE.follower.breakFollowing();
                 })
         );
-    }
-
-    @Override
-    public void init() {
         sequence.init();
     }
 

@@ -26,6 +26,15 @@ public class Constants {
             .rightFrontMotorDirection(DcMotorSimple.Direction.FORWARD)
             .rightRearMotorDirection(DcMotorSimple.Direction.FORWARD);
 
+    // =====================================================
+    // TODO: Populate after Pedro Pathing tuning is complete.
+    // maxVelocity    — confirm units (in/s vs normalized 0-1)
+    //                  forward velocity measured at 73.256 in/s
+    // maxAcceleration — tune via forward zero power accel tuner
+    //                  (31.504 recorded, confirm units match)
+    // maxAngularVelocity / maxAngularAcceleration — tune via
+    //                  lateral and turn tuners
+    // =====================================================
     public static PathConstraints pathConstraints =
             new PathConstraints(0.99, 100, 1, 1);
 
@@ -88,22 +97,14 @@ public class Constants {
         public static final double VELOCITY_FAR    = 439.8;  // 4200 RPM ⚠️ TBD
 
         // Gate timing relative to flywheel readiness
-        public static final double RPM_THRESHOLD     = 0.95; // 95% of target before firing
+        public static final double RPM_THRESHOLD       = 0.95; // 95% of target before firing
         public static final long   FLYWHEEL_TIMEOUT_MS = 3000;
-        public static final long   SHOOT_DURATION_MS   = 3000; // TODO: tune
+        public static final long   SHOOT_DURATION_MS   = 2000; // TODO: tune on hardware
     }
 
     // ---- Intake ----
     public static class Intake {
         public static final double FORWARD_POWER = 1.0;
         public static final double REVERSE_POWER = -1.0;
-    }
-
-    // ---- Snap/Field Positions ----
-    public static class SnapPositions {
-        // TODO: populate with real field coordinates after Pedro tuning
-        public static final double PLACEHOLDER_X       = 0.0;
-        public static final double PLACEHOLDER_Y       = 0.0;
-        public static final double PLACEHOLDER_HEADING = 0.0;
     }
 }

@@ -6,21 +6,15 @@ import gcsrobotics.vertices.Command;
 import gcsrobotics.vertices.SeriesCommand;
 
 public class GoToGate implements Command {
-    private final SeriesCommand sequence;
+    private SeriesCommand sequence;
+    private final Pose targetPose;
 
-    // =====================================================
-    // TODO: Replace all 0.0 values with real field coordinates
-    // from the Localization Test in your Tuning OpMode
-    // =====================================================
-
-    // Blue side gate pose
     private static final Pose GATE_POSE_BLUE = new Pose(
             0.0,    // TODO: tune X position
             0.0,    // TODO: tune Y position
             0.0     // TODO: tune heading (radians)
     );
 
-    // Red side gate pose
     private static final Pose GATE_POSE_RED = new Pose(
             0.0,    // TODO: 144 - GATE_POSE_BLUE.getX()
             0.0,    // TODO: GATE_POSE_BLUE.getY()
@@ -28,8 +22,11 @@ public class GoToGate implements Command {
     );
 
     public GoToGate(boolean isBlue) {
-        Pose targetPose = isBlue ? GATE_POSE_BLUE : GATE_POSE_RED;
+        this.targetPose = isBlue ? GATE_POSE_BLUE : GATE_POSE_RED;
+    }
 
+    @Override
+    public void init() {
         sequence = new SeriesCommand(
                 new FollowPath(
                         OpModeBase.INSTANCE.follower.getPose(),
@@ -37,10 +34,6 @@ public class GoToGate implements Command {
                 ),
                 new OpenGate()
         );
-    }
-
-    @Override
-    public void init() {
         sequence.init();
     }
 

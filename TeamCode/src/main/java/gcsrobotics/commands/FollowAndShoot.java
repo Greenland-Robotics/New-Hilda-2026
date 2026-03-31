@@ -2,11 +2,9 @@ package gcsrobotics.commands;
 
 import com.pedropathing.geometry.Pose;
 
-import gcsrobotics.control.OpModeBase;
 import gcsrobotics.vertices.Command;
 import gcsrobotics.vertices.ParallelCommand;
 import gcsrobotics.vertices.SeriesCommand;
-import gcsrobotics.vertices.InstantCommand;
 
 public class FollowAndShoot implements Command {
     private final ShootingPosition position;
@@ -25,10 +23,9 @@ public class FollowAndShoot implements Command {
         );
 
         sequence = new SeriesCommand(
-                // Step 1: drive to shooting position while spinning up flywheels
+                // Step 1: drive to shooting position while setting hood angle
                 new ParallelCommand(
                         new FollowPath(targetPose),
-                        new InstantCommand(() -> OpModeBase.INSTANCE.setFlywheelPower(1.0)),
                         new SetHoodAngle(position)
                 ),
                 // Step 2: shoot once in position

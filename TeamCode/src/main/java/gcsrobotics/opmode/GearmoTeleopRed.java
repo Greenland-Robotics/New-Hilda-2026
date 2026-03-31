@@ -1,12 +1,15 @@
 package gcsrobotics.opmode;
 
-import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
 
 import gcsrobotics.commands.DeployKickstandCommand;
-import gcsrobotics.commands.FollowPath;
+import gcsrobotics.commands.GoToGate;
+import gcsrobotics.commands.GoToHumanPlayer;
 import gcsrobotics.commands.KickstandSubsystem;
+import gcsrobotics.commands.Park;
+import gcsrobotics.commands.PathToCenter;
+import gcsrobotics.commands.PathToFarZone;
 import gcsrobotics.commands.RetractKickstandCommand;
 import gcsrobotics.commands.SetHoodAngle;
 import gcsrobotics.commands.ShootCurrent;
@@ -15,256 +18,244 @@ import gcsrobotics.control.OpModeBase;
 import gcsrobotics.control.TeleOpBase;
 import gcsrobotics.pedroPathing.Constants;
 import gcsrobotics.vertices.ButtonAction;
-import gcsrobotics.vertices.CommandRunner;
 import gcsrobotics.vertices.InstantCommand;
 import gcsrobotics.vertices.SeriesCommand;
 
-// ============================================================
-//  Gearmo TeleOp — Red
-// ============================================================
-//
-//  GAMEPAD 1 — DRIVER
-//  ----------------------------------------------------------
-//  Left stick          Manual drive (robot-centric)
-//  Right stick X       Manual rotation
-//  A (hold)            Pedro → CLOSE position, then auto spinup
-//  B (hold)            Pedro → MEDIUM position, then auto spinup
-//  X (hold)            Pedro → FAR position, then auto spinup
-//  Y (hold)            Pedro → TOP position, then auto spinup
-//  Any stick input     Cancels Pedro path, returns to manual
-//  D-pad Up            Deploy kickstand
-//  D-pad Down          Retract kickstand
-//  Start + A           Set alliance → BLUE
-//  Start + B           Set alliance → RED
-//
-//  GAMEPAD 2 — OPERATOR
-//  ----------------------------------------------------------
-//  Left stick Y        Intake (forward = in, back = reverse)
-//  A                   Spin up flywheel + set hood → CLOSE
-//  B                   Spin up flywheel + set hood → MEDIUM
-//  X                   Spin up flywheel + set hood → FAR
-//  Y                   Spin up flywheel + set hood → TOP
-//  Left bumper         Shoot at current position
-//  Right bumper        Shoot at current position
-//  Left trigger        Open gate manually
-//  Right trigger       Close gate manually
-//
-// ============================================================
+@TeleOp(name = "Hilda TeleOp — NH Premier", group = "Hilda")
+public class HildaTeleOp extends TeleOpBase {
 
-@TeleOp(name = "Gearmo TeleOp — Red", group = "Gearmo")
-public class GearmoTeleopRed extends TeleOpBase {
+    // ============================================================
+    //  GAMEPAD 1 — DRIVER
+    //  A                   Drive speed 25%
+    //  B                   Drive speed 50%
+    //  X                   Drive speed 75%
+    //  Y                   Drive speed 100%
+    //  Left bumper         GoToGate (alliance-aware)
+    //  Right bumper        GoToHumanPlayer (alliance-aware)
+    //  Left trigger        PathToCenter (alliance-aware)
+    //  Right trigger       Park (alliance-aware)
+    //  D-pad Up            Deploy kickstand
+    //  D-pad Down          Retract kickstand
+    //  D-pad Right         PathToFarZone (alliance-aware)
+    //  Start + A           Set alliance → BLUE
+    //  Start + B           Set alliance → RED
+    //
+    //  GAMEPAD 2 — OPERATOR
+    //  Left stick Y        Intake (forward = in, pull back = unjam)
+    //  Left bumper         Snap hood → CLOSE
+    //  Right bumper        Snap hood → MEDIUM
+    //  Left trigger        Snap hood → TOP
+    //  Right trigger       Snap hood → FAR
+    //  A                   Shoot at current position
+    //  B                   Shoot at current position (backup)
+    //  X                   Manual gate open
+    //  Y                   Manual gate close
+    // ============================================================
 
     // ---- Alliance ----
-    private boolean isBlue = false;
+    private boolean isBlue = true;
 
-    // ---- Current shooting position ----
+    // ---- Drive speed multiplier ----
+    private double driveSpeed = 1.0;
+
+    // ---- Current shooting position (updated by GP2 bumpers/triggers) ----
     private ShootingPosition currentPosition = ShootingPosition.CLOSE;
-
-    // ---- Pedro path state ----
-    private boolean pedroActive = false;
-    private ShootingPosition pedroTarget = null;
 
     // ---- Kickstand ----
     private KickstandSubsystem kickstand;
 
-    // ---- Command runner ----
-    private CommandRunner commandRunner;
-
-    // ---- GP2 button actions ----
-    private ButtonAction spinUpClose;
-    private ButtonAction spinUpMedium;
-    private ButtonAction spinUpFar;
-    private ButtonAction spinUpTop;
-    private ButtonAction shootLeft;
-    private ButtonAction shootRight;
-
-    // ---- GP1 kickstand actions ----
+    // ---- GP1 button actions ----
+    private ButtonAction goToGate;
+    private ButtonAction goToHumanPlayer;
+    private ButtonAction pathToCenter;
+    private ButtonAction pathToPark;
+    private ButtonAction pathToFarZone;
     private ButtonAction deployKickstand;
     private ButtonAction retractKickstand;
 
+    // ---- GP2 button actions ----
+    private ButtonAction snapClose;
+    private ButtonAction snapMedium;
+    private ButtonAction snapTop;
+    private ButtonAction snapFar;
+    private ButtonAction shootA;
+    private ButtonAction shootB;
+    private ButtonAction openGate;
+    private ButtonAction closeGate;
+
     @Override
     protected void initialize() {
-        kickstand = new KickstandSubsystem(hardwareMap.get(CRServo.class, "kickstand"));
-        commandRunner = new CommandRunner();
-
+        kickstand = new KickstandSubsystem(
+                hardwareMap.get(CRServo.class, Constants.Kickstand.MOTOR_NAME)
+        );
         buildActions();
 
-        // Initialize Pedro in teleop drive mode
-        follower.startTeleopDrive();
-
-        telemetry.addData("Gearmo TeleOp", "Initialized");
+        telemetry.addData("Status",   "Initialized");
         telemetry.addData("Alliance", isBlue ? "BLUE" : "RED");
+        telemetry.addData("Speed",    (int)(driveSpeed * 100) + "%");
         telemetry.update();
     }
 
+    // Called once at init and again any time alliance changes
     private void buildActions() {
 
-        // ---- GP2: Spin up flywheel + set hood ----
-        spinUpClose = new ButtonAction(
+        // ---- GP1: Path commands (all alliance-aware) ----
+        // NOTE: these capture isBlue at build time. buildActions() is
+        // called again on Start+A / Start+B so they stay current.
+        goToGate = new ButtonAction(
+                new GoToGate(isBlue), commandRunner
+        );
+        goToHumanPlayer = new ButtonAction(
+                new GoToHumanPlayer(isBlue), commandRunner
+        );
+        pathToCenter = new ButtonAction(
+                new PathToCenter(isBlue), commandRunner
+        );
+        pathToPark = new ButtonAction(
+                new Park(isBlue), commandRunner
+        );
+        pathToFarZone = new ButtonAction(
+                new PathToFarZone(isBlue), commandRunner
+        );
+
+        // ---- GP1: Kickstand ----
+        deployKickstand = new ButtonAction(
+                new DeployKickstandCommand(kickstand), commandRunner
+        );
+        retractKickstand = new ButtonAction(
+                new RetractKickstandCommand(kickstand), commandRunner
+        );
+
+        // ---- GP2: Hood snap (sets position and updates currentPosition) ----
+        snapClose = new ButtonAction(
                 new SeriesCommand(
-                        new InstantCommand(() -> {
-                            currentPosition = ShootingPosition.CLOSE;
-                            OpModeBase.INSTANCE.setFlywheelVelocity(
-                                    Constants.Flywheel.VELOCITY_CLOSE);
-                        }),
+                        new InstantCommand(() -> currentPosition = ShootingPosition.CLOSE),
                         new SetHoodAngle(ShootingPosition.CLOSE)
                 ), commandRunner
         );
-        spinUpMedium = new ButtonAction(
+        snapMedium = new ButtonAction(
                 new SeriesCommand(
-                        new InstantCommand(() -> {
-                            currentPosition = ShootingPosition.MEDIUM;
-                            OpModeBase.INSTANCE.setFlywheelVelocity(
-                                    Constants.Flywheel.VELOCITY_MEDIUM);
-                        }),
+                        new InstantCommand(() -> currentPosition = ShootingPosition.MEDIUM),
                         new SetHoodAngle(ShootingPosition.MEDIUM)
                 ), commandRunner
         );
-        spinUpFar = new ButtonAction(
+        snapTop = new ButtonAction(
                 new SeriesCommand(
-                        new InstantCommand(() -> {
-                            currentPosition = ShootingPosition.FAR;
-                            OpModeBase.INSTANCE.setFlywheelVelocity(
-                                    Constants.Flywheel.VELOCITY_FAR);
-                        }),
-                        new SetHoodAngle(ShootingPosition.FAR)
-                ), commandRunner
-        );
-        spinUpTop = new ButtonAction(
-                new SeriesCommand(
-                        new InstantCommand(() -> {
-                            currentPosition = ShootingPosition.TOP;
-                            OpModeBase.INSTANCE.setFlywheelVelocity(
-                                    Constants.Flywheel.VELOCITY_TOP);
-                        }),
+                        new InstantCommand(() -> currentPosition = ShootingPosition.TOP),
                         new SetHoodAngle(ShootingPosition.TOP)
                 ), commandRunner
         );
+        snapFar = new ButtonAction(
+                new SeriesCommand(
+                        new InstantCommand(() -> currentPosition = ShootingPosition.FAR),
+                        new SetHoodAngle(ShootingPosition.FAR)
+                ), commandRunner
+        );
 
-        // ---- GP2: Shoot using live currentPosition supplier ----
-        shootLeft  = new ButtonAction(
-                new ShootCurrent(() -> currentPosition), commandRunner);
-        shootRight = new ButtonAction(
-                new ShootCurrent(() -> currentPosition), commandRunner);
+        // ---- GP2: Shoot at current position ----
+        // ShootCurrent resolves currentPosition at button-press time via supplier
+        shootA = new ButtonAction(
+                new ShootCurrent(() -> currentPosition), commandRunner
+        );
+        shootB = new ButtonAction(
+                new ShootCurrent(() -> currentPosition), commandRunner
+        );
 
-        // ---- GP1: Kickstand ----
-        deployKickstand  = new ButtonAction(
-                new DeployKickstandCommand(kickstand), commandRunner);
-        retractKickstand = new ButtonAction(
-                new RetractKickstandCommand(kickstand), commandRunner);
+        // ---- GP2: Manual gate ----
+        openGate = new ButtonAction(
+                new InstantCommand(() ->
+                        OpModeBase.INSTANCE.gateServo.setPosition(Constants.Gate.OPEN_POSITION)
+                ), commandRunner
+        );
+        closeGate = new ButtonAction(
+                new InstantCommand(() ->
+                        OpModeBase.INSTANCE.gateServo.setPosition(Constants.Gate.CLOSE_POSITION)
+                ), commandRunner
+        );
     }
 
     @Override
     protected void runLoop() {
-        OpModeBase robot = OpModeBase.INSTANCE;
 
-        // ---- Alliance selection ----
+        // =====================================================
+        // GAMEPAD 1 — DRIVER
+        // =====================================================
+
+        // Drive speed presets
+        if (gamepad1.a) driveSpeed = 0.25;
+        if (gamepad1.b) driveSpeed = 0.50;
+        if (gamepad1.x) driveSpeed = 0.75;
+        if (gamepad1.y) driveSpeed = 1.00;
+
+        // Apply drive speed scaling — TeleOpBase already sends raw sticks to
+        // follower.setTeleOpDrive(), so we override here with scaled values
+        OpModeBase.INSTANCE.follower.setTeleOpMovementVectors(
+                -gamepad1.left_stick_y  * driveSpeed,
+                -gamepad1.left_stick_x  * driveSpeed,
+                -gamepad1.right_stick_x * driveSpeed,
+                false
+        );
+
+        // Alliance selection (Start + face button)
         if (gamepad1.start && gamepad1.a) {
-            if (!isBlue) { isBlue = true;  buildActions(); }
-        } else if (gamepad1.start && gamepad1.b) {
-            if (isBlue)  { isBlue = false; buildActions(); }
+            isBlue = true;
+            buildActions();
+            telemetry.addData("Alliance", "BLUE");
+        }
+        if (gamepad1.start && gamepad1.b) {
+            isBlue = false;
+            buildActions();
+            telemetry.addData("Alliance", "RED");
         }
 
-        // ---- Joystick input detection ----
-        boolean driverMoving =
-                Math.abs(gamepad1.left_stick_x)  > 0.05 ||
-                        Math.abs(gamepad1.left_stick_y)  > 0.05 ||
-                        Math.abs(gamepad1.right_stick_x) > 0.05;
+        // Path commands
+        goToGate.update(gamepad1.left_bumper);
+        goToHumanPlayer.update(gamepad1.right_bumper);
+        pathToCenter.update(gamepad1.left_trigger > 0.5);
+        pathToPark.update(gamepad1.right_trigger > 0.5);
+        pathToFarZone.update(gamepad1.dpad_right);
 
-        // ---- GP1: Pedro path buttons (hold to drive, release = stop) ----
-        ShootingPosition heldPosition = null;
-        if (!gamepad1.start) {
-            if      (gamepad1.a) heldPosition = ShootingPosition.CLOSE;
-            else if (gamepad1.b) heldPosition = ShootingPosition.MEDIUM;
-            else if (gamepad1.x) heldPosition = ShootingPosition.FAR;
-            else if (gamepad1.y) heldPosition = ShootingPosition.TOP;
-        }
-
-        if (driverMoving) {
-            // Joystick input — cancel Pedro, return to manual
-            if (pedroActive) {
-                follower.breakFollowing();
-                follower.startTeleopDrive();
-                pedroActive = false;
-                pedroTarget = null;
-            }
-            follower.setTeleOpDrive(
-                    -gamepad1.left_stick_y,
-                    gamepad1.left_stick_x,
-                    gamepad1.right_stick_x,
-                    true
-            );
-            follower.update();
-
-        } else if (heldPosition != null) {
-            // Button held — start or continue Pedro path to this position
-            if (!pedroActive || heldPosition != pedroTarget) {
-                pedroTarget = heldPosition;
-                pedroActive = true;
-                Pose targetPose = new Pose(
-                        pedroTarget.poseX,
-                        pedroTarget.poseY,
-                        pedroTarget.poseHeading
-                );
-                commandRunner.run(new FollowPath(targetPose));
-            }
-            follower.update();
-
-        } else {
-            // No button, no stick — idle
-            if (pedroActive) {
-                follower.breakFollowing();
-                follower.startTeleopDrive();
-                pedroActive = false;
-
-                if (pedroTarget != null) {
-                    currentPosition = pedroTarget;
-                    robot.setFlywheelVelocity(pedroTarget.targetVelocity);
-                    robot.hoodServo.setPosition(pedroTarget.hoodPosition);
-                }
-                pedroTarget = null;
-            }
-            follower.setTeleOpDrive(0, 0, 0, true);
-            follower.update();
-        }
-
-        // ---- GP1: Kickstand ----
+        // Kickstand
         deployKickstand.update(gamepad1.dpad_up);
         retractKickstand.update(gamepad1.dpad_down);
 
-        // ---- GP2: Intake ----
-        double intakeInput = -gamepad2.left_stick_y;
-        robot.intakeMotor.setPower(Math.abs(intakeInput) > 0.05 ? intakeInput : 0);
+        // =====================================================
+        // GAMEPAD 2 — OPERATOR
+        // =====================================================
 
-        // ---- GP2: Spin up flywheel + hood ----
-        spinUpClose.update(gamepad2.a);
-        spinUpMedium.update(gamepad2.b);
-        spinUpFar.update(gamepad2.x);
-        spinUpTop.update(gamepad2.y);
-
-        // ---- GP2: Shoot ----
-        shootLeft.update(gamepad2.left_bumper);
-        shootRight.update(gamepad2.right_bumper);
-
-        // ---- GP2: Manual gate override ----
-        if (gamepad2.left_trigger > 0.1) {
-            robot.gateServo.setPosition(Constants.Gate.OPEN_POSITION);
-        } else if (gamepad2.right_trigger > 0.1) {
-            robot.gateServo.setPosition(Constants.Gate.CLOSE_POSITION);
+        // Intake — analog, left stick Y
+        double intakePower = -gamepad2.left_stick_y;
+        if (Math.abs(intakePower) > 0.1) {
+            OpModeBase.INSTANCE.intakeMotor.setPower(intakePower);
+        } else {
+            OpModeBase.INSTANCE.intakeMotor.setPower(0);
         }
 
-        // ---- Command runner tick ----
-        commandRunner.update();
+        // Hood snap
+        snapClose.update(gamepad2.left_bumper);
+        snapMedium.update(gamepad2.right_bumper);
+        snapTop.update(gamepad2.left_trigger > 0.5);
+        snapFar.update(gamepad2.right_trigger > 0.5);
 
-        // ---- Telemetry ----
-        telemetry.addData("Alliance",      isBlue ? "BLUE" : "RED");
-        telemetry.addData("Position",      currentPosition);
-        telemetry.addData("Pedro Active",  pedroActive);
-        telemetry.addData("Flywheel Vel",  robot.getFlywheelVelocity());
-        telemetry.addData("Intake Power",  robot.intakeMotor.getPower());
-        telemetry.addData("X",             robot.follower.getPose().getX());
-        telemetry.addData("Y",             robot.follower.getPose().getY());
-        telemetry.addData("Heading (deg)", Math.toDegrees(robot.follower.getPose().getHeading()));
+        // Shoot
+        shootA.update(gamepad2.a);
+        shootB.update(gamepad2.b);
+
+        // Manual gate
+        openGate.update(gamepad2.x);
+        closeGate.update(gamepad2.y);
+
+        // =====================================================
+        // TELEMETRY
+        // =====================================================
+        telemetry.addData("Alliance",          isBlue ? "BLUE" : "RED");
+        telemetry.addData("Drive speed",       (int)(driveSpeed * 100) + "%");
+        telemetry.addData("Hood position",     currentPosition);
+        telemetry.addData("Flywheel velocity", OpModeBase.INSTANCE.getFlywheelVelocity());
+        telemetry.addData("Pose X",            OpModeBase.INSTANCE.follower.getPose().getX());
+        telemetry.addData("Pose Y",            OpModeBase.INSTANCE.follower.getPose().getY());
+        telemetry.addData("Heading",           Math.toDegrees(
+                OpModeBase.INSTANCE.follower.getPose().getHeading()));
         telemetry.update();
     }
 }
