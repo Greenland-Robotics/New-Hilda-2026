@@ -4,12 +4,10 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
 
 import gcsrobotics.commands.DeployKickstandCommand;
-import gcsrobotics.commands.GoToGate;
+import gcsrobotics.commands.FollowPath;
 import gcsrobotics.commands.GoToHumanPlayer;
 import gcsrobotics.commands.KickstandSubsystem;
 import gcsrobotics.commands.Park;
-import gcsrobotics.commands.PathToCenter;
-import gcsrobotics.commands.PathToFarZone;
 import gcsrobotics.commands.RetractKickstandCommand;
 import gcsrobotics.commands.SetHoodAngle;
 import gcsrobotics.commands.ShootCurrent;
@@ -21,65 +19,64 @@ import gcsrobotics.vertices.ButtonAction;
 import gcsrobotics.vertices.InstantCommand;
 import gcsrobotics.vertices.SeriesCommand;
 
-@TeleOp(name = "Hilda TeleOp — NH Premier", group = "Hilda")
-public class HildaTeleOp extends TeleOpBase {
+@TeleOp(name = "Gearmo TeleOp — NH Premier", group = "Hilda")
+public class GearmoTeleopRed extends TeleOpBase {
 
     // ============================================================
     //  GAMEPAD 1 — DRIVER
-    //  A                   Drive speed 25%
-    //  B                   Drive speed 50%
-    //  X                   Drive speed 75%
-    //  Y                   Drive speed 100%
-    //  Left bumper         GoToGate (alliance-aware)
-    //  Right bumper        GoToHumanPlayer (alliance-aware)
-    //  Left trigger        PathToCenter (alliance-aware)
-    //  Right trigger       Park (alliance-aware)
+    //  Left stick Y/X      Forward / strafe
+    //  Right stick X       Rotation
+    //  Left bumper         Strafe left
+    //  Right bumper        Strafe right
+    //  A                   Path to CLOSE shooting position
+    //  B                   Path to MEDIUM shooting position
+    //  X                   PathToCenter
+    //  Y                   PathToFarZone
     //  D-pad Up            Deploy kickstand
     //  D-pad Down          Retract kickstand
-    //  D-pad Right         PathToFarZone (alliance-aware)
+    //  D-pad Right         GoToHumanPlayer
+    //  D-pad Left          Park
     //  Start + A           Set alliance → BLUE
     //  Start + B           Set alliance → RED
     //
     //  GAMEPAD 2 — OPERATOR
     //  Left stick Y        Intake (forward = in, pull back = unjam)
-    //  Left bumper         Snap hood → CLOSE
-    //  Right bumper        Snap hood → MEDIUM
-    //  Left trigger        Snap hood → TOP
-    //  Right trigger       Snap hood → FAR
-    //  A                   Shoot at current position
-    //  B                   Shoot at current position (backup)
-    //  X                   Manual gate open
-    //  Y                   Manual gate close
+    //  A                   Hood → CLOSE
+    //  B                   Hood → MEDIUM
+    //  X                   Hood → TOP
+    //  Y                   Hood → FAR
+    //  Right bumper        Shoot at current position
+    //  Left bumper         Stop flywheel
+    //  Left trigger        Manual gate open
+    //  Right trigger       Manual gate close
     // ============================================================
 
     // ---- Alliance ----
     private boolean isBlue = true;
 
-    // ---- Drive speed multiplier ----
-    private double driveSpeed = 1.0;
-
-    // ---- Current shooting position (updated by GP2 bumpers/triggers) ----
+    // ---- Current shooting position (updated by GP2 A/B/X/Y) ----
     private ShootingPosition currentPosition = ShootingPosition.CLOSE;
 
     // ---- Kickstand ----
     private KickstandSubsystem kickstand;
 
     // ---- GP1 button actions ----
-    private ButtonAction goToGate;
-    private ButtonAction goToHumanPlayer;
-    private ButtonAction pathToCenter;
-    private ButtonAction pathToPark;
-    private ButtonAction pathToFarZone;
-    private ButtonAction deployKickstand;
-    private ButtonAction retractKickstand;
-
-    // ---- GP2 button actions ----
     private ButtonAction snapClose;
     private ButtonAction snapMedium;
     private ButtonAction snapTop;
     private ButtonAction snapFar;
-    private ButtonAction shootA;
-    private ButtonAction shootB;
+    private ButtonAction goToHumanPlayer;
+    private ButtonAction pathToPark;
+    private ButtonAction deployKickstand;
+    private ButtonAction retractKickstand;
+
+    // ---- GP2 button actions ----
+    private ButtonAction hoodClose;
+    private ButtonAction hoodMedium;
+    private ButtonAction hoodTop;
+    private ButtonAction hoodFar;
+    private ButtonAction shoot;
+    private ButtonAction stopFlywheel;
     private ButtonAction openGate;
     private ButtonAction closeGate;
 
@@ -92,30 +89,40 @@ public class HildaTeleOp extends TeleOpBase {
 
         telemetry.addData("Status",   "Initialized");
         telemetry.addData("Alliance", isBlue ? "BLUE" : "RED");
-        telemetry.addData("Speed",    (int)(driveSpeed * 100) + "%");
         telemetry.update();
     }
 
     // Called once at init and again any time alliance changes
     private void buildActions() {
 
-        // ---- GP1: Path commands (all alliance-aware) ----
-        // NOTE: these capture isBlue at build time. buildActions() is
-        // called again on Start+A / Start+B so they stay current.
-        goToGate = new ButtonAction(
-                new GoToGate(isBlue), commandRunner
+        // ---- GP1: Path to shooting position (path + heading, no shoot) ----
+        snapClose = new ButtonAction(
+                new FollowPath(ShootingPosition.CLOSE.poseX,
+                        ShootingPosition.CLOSE.poseY,
+                        ShootingPosition.CLOSE.poseHeading),
+                commandRunner
         );
+        snapMedium = new ButtonAction(
+                new FollowPath(ShootingPosition.MEDIUM.poseX,
+                        ShootingPosition.MEDIUM.poseY,
+                        ShootingPosition.MEDIUM.poseHeading),
+                commandRunner
+        );
+
+        // ---- GP1: X → PathToCenter, Y → PathToFarZone ----
+        snapTop = new ButtonAction(
+                new gcsrobotics.commands.PathToCenter(isBlue), commandRunner
+        );
+        snapFar = new ButtonAction(
+                new gcsrobotics.commands.PathToFarZone(isBlue), commandRunner
+        );
+
+        // ---- GP1: D-pad ----
         goToHumanPlayer = new ButtonAction(
                 new GoToHumanPlayer(isBlue), commandRunner
         );
-        pathToCenter = new ButtonAction(
-                new PathToCenter(isBlue), commandRunner
-        );
         pathToPark = new ButtonAction(
                 new Park(isBlue), commandRunner
-        );
-        pathToFarZone = new ButtonAction(
-                new PathToFarZone(isBlue), commandRunner
         );
 
         // ---- GP1: Kickstand ----
@@ -126,26 +133,26 @@ public class HildaTeleOp extends TeleOpBase {
                 new RetractKickstandCommand(kickstand), commandRunner
         );
 
-        // ---- GP2: Hood snap (sets position and updates currentPosition) ----
-        snapClose = new ButtonAction(
+        // ---- GP2: Hood position (updates currentPosition for shoot) ----
+        hoodClose = new ButtonAction(
                 new SeriesCommand(
                         new InstantCommand(() -> currentPosition = ShootingPosition.CLOSE),
                         new SetHoodAngle(ShootingPosition.CLOSE)
                 ), commandRunner
         );
-        snapMedium = new ButtonAction(
+        hoodMedium = new ButtonAction(
                 new SeriesCommand(
                         new InstantCommand(() -> currentPosition = ShootingPosition.MEDIUM),
                         new SetHoodAngle(ShootingPosition.MEDIUM)
                 ), commandRunner
         );
-        snapTop = new ButtonAction(
+        hoodTop = new ButtonAction(
                 new SeriesCommand(
                         new InstantCommand(() -> currentPosition = ShootingPosition.TOP),
                         new SetHoodAngle(ShootingPosition.TOP)
                 ), commandRunner
         );
-        snapFar = new ButtonAction(
+        hoodFar = new ButtonAction(
                 new SeriesCommand(
                         new InstantCommand(() -> currentPosition = ShootingPosition.FAR),
                         new SetHoodAngle(ShootingPosition.FAR)
@@ -153,12 +160,14 @@ public class HildaTeleOp extends TeleOpBase {
         );
 
         // ---- GP2: Shoot at current position ----
-        // ShootCurrent resolves currentPosition at button-press time via supplier
-        shootA = new ButtonAction(
+        shoot = new ButtonAction(
                 new ShootCurrent(() -> currentPosition), commandRunner
         );
-        shootB = new ButtonAction(
-                new ShootCurrent(() -> currentPosition), commandRunner
+
+        // ---- GP2: Stop flywheel immediately ----
+        stopFlywheel = new ButtonAction(
+                new InstantCommand(() -> OpModeBase.INSTANCE.setFlywheelVelocity(0)),
+                commandRunner
         );
 
         // ---- GP2: Manual gate ----
@@ -181,18 +190,16 @@ public class HildaTeleOp extends TeleOpBase {
         // GAMEPAD 1 — DRIVER
         // =====================================================
 
-        // Drive speed presets
-        if (gamepad1.a) driveSpeed = 0.25;
-        if (gamepad1.b) driveSpeed = 0.50;
-        if (gamepad1.x) driveSpeed = 0.75;
-        if (gamepad1.y) driveSpeed = 1.00;
+        // Bumper strafe — left bumper strafes left, right bumper strafes right
+        // These override the left stick X when pressed
+        double strafe = -gamepad1.left_stick_x;
+        if (gamepad1.left_bumper)  strafe = -1.0;
+        if (gamepad1.right_bumper) strafe =  1.0;
 
-        // Apply drive speed scaling — TeleOpBase already sends raw sticks to
-        // follower.setTeleOpDrive(), so we override here with scaled values
-        OpModeBase.INSTANCE.follower.setTeleOpMovementVectors(
-                -gamepad1.left_stick_y  * driveSpeed,
-                -gamepad1.left_stick_x  * driveSpeed,
-                -gamepad1.right_stick_x * driveSpeed,
+        OpModeBase.INSTANCE.follower.setTeleOpDrive(
+                -gamepad1.left_stick_y,
+                strafe,
+                -gamepad1.right_stick_x,
                 false
         );
 
@@ -208,14 +215,15 @@ public class HildaTeleOp extends TeleOpBase {
             telemetry.addData("Alliance", "RED");
         }
 
-        // Path commands
-        goToGate.update(gamepad1.left_bumper);
-        goToHumanPlayer.update(gamepad1.right_bumper);
-        pathToCenter.update(gamepad1.left_trigger > 0.5);
-        pathToPark.update(gamepad1.right_trigger > 0.5);
-        pathToFarZone.update(gamepad1.dpad_right);
+        // Snap to shooting position (path + heading)
+        snapClose.update(gamepad1.a && !gamepad1.start);
+        snapMedium.update(gamepad1.b && !gamepad1.start);
+        snapTop.update(gamepad1.x);
+        snapFar.update(gamepad1.y);
 
-        // Kickstand
+        // D-pad
+        goToHumanPlayer.update(gamepad1.dpad_right);
+        pathToPark.update(gamepad1.dpad_left);
         deployKickstand.update(gamepad1.dpad_up);
         retractKickstand.update(gamepad1.dpad_down);
 
@@ -231,25 +239,24 @@ public class HildaTeleOp extends TeleOpBase {
             OpModeBase.INSTANCE.intakeMotor.setPower(0);
         }
 
-        // Hood snap
-        snapClose.update(gamepad2.left_bumper);
-        snapMedium.update(gamepad2.right_bumper);
-        snapTop.update(gamepad2.left_trigger > 0.5);
-        snapFar.update(gamepad2.right_trigger > 0.5);
+        // Hood position
+        hoodClose.update(gamepad2.a);
+        hoodMedium.update(gamepad2.b);
+        hoodTop.update(gamepad2.x);
+        hoodFar.update(gamepad2.y);
 
-        // Shoot
-        shootA.update(gamepad2.a);
-        shootB.update(gamepad2.b);
+        // Shoot / stop flywheel
+        shoot.update(gamepad2.right_bumper);
+        stopFlywheel.update(gamepad2.left_bumper);
 
         // Manual gate
-        openGate.update(gamepad2.x);
-        closeGate.update(gamepad2.y);
+        openGate.update(gamepad2.left_trigger > 0.5);
+        closeGate.update(gamepad2.right_trigger > 0.5);
 
         // =====================================================
         // TELEMETRY
         // =====================================================
         telemetry.addData("Alliance",          isBlue ? "BLUE" : "RED");
-        telemetry.addData("Drive speed",       (int)(driveSpeed * 100) + "%");
         telemetry.addData("Hood position",     currentPosition);
         telemetry.addData("Flywheel velocity", OpModeBase.INSTANCE.getFlywheelVelocity());
         telemetry.addData("Pose X",            OpModeBase.INSTANCE.follower.getPose().getX());
