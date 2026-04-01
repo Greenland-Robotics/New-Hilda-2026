@@ -28,12 +28,6 @@ public class Constants {
 
     // =====================================================
     // TODO: Populate after Pedro Pathing tuning is complete.
-    // maxVelocity    — confirm units (in/s vs normalized 0-1)
-    //                  forward velocity measured at 73.256 in/s
-    // maxAcceleration — tune via forward zero power accel tuner
-    //                  (31.504 recorded, confirm units match)
-    // maxAngularVelocity / maxAngularAcceleration — tune via
-    //                  lateral and turn tuners
     // =====================================================
     public static PathConstraints pathConstraints =
             new PathConstraints(0.99, 100, 1, 1);
@@ -42,7 +36,7 @@ public class Constants {
             .forwardPodY(-5)
             .strafePodX(0.5)
             .distanceUnit(DistanceUnit.INCH)
-            .hardwareMapName("pinpoint")
+            .hardwareMapName("odo")
             .encoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD)
             .forwardEncoderDirection(GoBildaPinpointDriver.EncoderDirection.FORWARD)
             .strafeEncoderDirection(GoBildaPinpointDriver.EncoderDirection.FORWARD);
@@ -68,43 +62,44 @@ public class Constants {
 
     // ---- Gate (Standard Servo) ----
     public static class Gate {
-        public static final double OPEN_POSITION  = 0.4;
-        public static final double CLOSE_POSITION = 1.0;
+        public static final double OPEN_POSITION  = 0.6;
+        public static final double CLOSE_POSITION = 0.0;
     }
 
     // ---- Hood (Axon MAX servo — alliance-independent) ----
+    // A = CLOSE, X = MEDIUM, Y = TOP, B = FAR
     public static class Hood {
-        public static final double CLOSE  = 0.10;
-        public static final double MEDIUM = 0.25;
-        public static final double TOP    = 0.40;
-        public static final double FAR    = 0.55;
+        public static final double CLOSE  = 0.8; //a
+        public static final double MEDIUM = 0.6; //x
+        public static final double TOP    = 0.5; //y
+        public static final double FAR    = 0.4; //b
     }
 
     // ---- Flywheel (dual goBILDA 6000 RPM, shared shaft) ----
-    // Velocities in rad/sec — use with setVelocity(v, AngleUnit.RADIANS)
-    // PIDF starting values: tune F first on FTC Dashboard, then P
-    // ⚠️  FAR (4200 RPM) likely exceeds motor max under load — confirm on hardware
+    // All velocities in RPM — converted to ticks/sec in OpModeBase
+    // 28 ticks/rev for goBILDA Yellow Jacket
+    // PIDF: tune F first on FTC Dashboard for flat steady-state, then P for ramp
     public static class Flywheel {
         public static final double PIDF_F = 11.7;
         public static final double PIDF_P = 0.5;
         public static final double PIDF_I = 0.0;
         public static final double PIDF_D = 0.0;
 
-        // Target velocities in rad/sec
-        public static final double VELOCITY_CLOSE  = 251.3;  // 2400 RPM
-        public static final double VELOCITY_MEDIUM = 314.2;  // 3000 RPM
-        public static final double VELOCITY_TOP    = 377.0;  // 3600 RPM
-        public static final double VELOCITY_FAR    = 439.8;  // 4200 RPM ⚠️ TBD
+        // Target velocities in RPM — A=CLOSE, X=MEDIUM, Y=TOP, B=FAR
+        // TODO: tune all four values on hardware
+        public static final double VELOCITY_CLOSE  = 2000;  // A — slowest
+        public static final double VELOCITY_MEDIUM = 2500;  // X
+        public static final double VELOCITY_TOP    = 3000;  // Y
+        public static final double VELOCITY_FAR    = 4000;  // B — fastest
 
-        // Gate timing relative to flywheel readiness
-        public static final double RPM_THRESHOLD       = 0.95; // 95% of target before firing
+        public static final double RPM_THRESHOLD       = 0.95;
         public static final long   FLYWHEEL_TIMEOUT_MS = 3000;
-        public static final long   SHOOT_DURATION_MS   = 2000; // TODO: tune on hardware
+        public static final long   SHOOT_DURATION_MS   = 2000;
     }
 
     // ---- Intake ----
     public static class Intake {
-        public static final double FORWARD_POWER = 1.0;
-        public static final double REVERSE_POWER = -1.0;
+        public static final double FORWARD_POWER = -1.0;
+        public static final double REVERSE_POWER = 1.0;
     }
 }

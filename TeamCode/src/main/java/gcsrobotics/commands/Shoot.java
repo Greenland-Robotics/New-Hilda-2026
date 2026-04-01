@@ -9,7 +9,6 @@ import gcsrobotics.vertices.SeriesCommand;
 import gcsrobotics.vertices.SleepCommand;
 
 public class Shoot implements Command {
-    private final OpModeBase robot = OpModeBase.INSTANCE;
     private final ShootingPosition position;
     private SeriesCommand sequence;
 
@@ -19,6 +18,8 @@ public class Shoot implements Command {
 
     @Override
     public void init() {
+        OpModeBase robot = OpModeBase.INSTANCE;
+
         sequence = new SeriesCommand(
                 // Step 1: spin up flywheels to target velocity and set hood angle
                 new InstantCommand(() -> {
@@ -31,16 +32,18 @@ public class Shoot implements Command {
                                 position.targetVelocity * Constants.Flywheel.RPM_THRESHOLD,
                         Constants.Flywheel.FLYWHEEL_TIMEOUT_MS
                 ),
-                // Step 3: open gate
-                new InstantCommand(() ->
-                        robot.gateServo.setPosition(Constants.Gate.OPEN_POSITION)),
-                // Step 4: brief pause for gate to open
+                // Step 3: stop intake and open gate simultaneously
+                new InstantCommand(() -> {
+                    robot.intakeMotor.setPower(0);
+                    robot.gateServo.setPosition(Constants.Gate.OPEN_POSITION);
+                }),
+                // Step 4: wait 150ms for gate to open
                 new SleepCommand(150),
-                // Step 5: start intake at full power
+                // Step 5: run intake to push artifact through
                 new InstantCommand(() ->
                         robot.intakeMotor.setPower(Constants.Intake.FORWARD_POWER)),
-                // Step 6: wait for artifact to pass through
-                new SleepCommand(Constants.Flywheel.SHOOT_DURATION_MS),
+                // Step 6: run intake for 2000ms
+                new SleepCommand(2000),
                 // Step 7: close gate and stop intake
                 // flywheel keeps spinning at current velocity until next input
                 new InstantCommand(() -> {

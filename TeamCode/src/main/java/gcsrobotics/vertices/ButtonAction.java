@@ -1,22 +1,23 @@
 package gcsrobotics.vertices;
 
+import java.util.function.Supplier;
+
 public class ButtonAction {
     public boolean lastPressed = false;
 
-    private final Command command;
+    private final Supplier<Command> commandFactory;
     private final CommandRunner commandRunner;
 
-    public ButtonAction(Command command, CommandRunner commandRunner) {
-        this.command = command;
+    public ButtonAction(Supplier<Command> commandFactory, CommandRunner commandRunner) {
+        this.commandFactory = commandFactory;
         this.commandRunner = commandRunner;
     }
 
     public void update(boolean input) {
         if (input && !lastPressed) {
             lastPressed = true;
-            commandRunner.run(command);
-        }
-        else if (!input) {
+            commandRunner.run(commandFactory.get());
+        } else if (!input) {
             lastPressed = false;
         }
     }

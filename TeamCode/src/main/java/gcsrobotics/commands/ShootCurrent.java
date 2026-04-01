@@ -4,7 +4,6 @@ import java.util.function.Supplier;
 
 import gcsrobotics.control.OpModeBase;
 import gcsrobotics.pedroPathing.Constants;
-import gcsrobotics.vertices.AwaitCommand;
 import gcsrobotics.vertices.Command;
 import gcsrobotics.vertices.InstantCommand;
 import gcsrobotics.vertices.SeriesCommand;
@@ -20,34 +19,23 @@ public class ShootCurrent implements Command {
 
     @Override
     public void init() {
-        // Read currentPosition at the moment the button is pressed
-        ShootingPosition position = positionSupplier.get();
         OpModeBase robot = OpModeBase.INSTANCE;
 
         sequence = new SeriesCommand(
-                // Step 1: spin up flywheels to target velocity and set hood angle
+                // Step 1: stop intake and open gate simultaneously
                 new InstantCommand(() -> {
-                    robot.setFlywheelVelocity(position.targetVelocity);
-                    robot.hoodServo.setPosition(position.hoodPosition);
+                    robot.intakeMotor.setPower(0);
+                    robot.gateServo.setPosition(Constants.Gate.OPEN_POSITION);
                 }),
-                // Step 2: wait for flywheels to reach target velocity
-                new AwaitCommand(
-                        () -> robot.getFlywheelVelocity() >=
-                                position.targetVelocity * Constants.Flywheel.RPM_THRESHOLD,
-                        Constants.Flywheel.FLYWHEEL_TIMEOUT_MS
-                ),
-                // Step 3: open gate
-                new InstantCommand(() ->
-                        robot.gateServo.setPosition(Constants.Gate.OPEN_POSITION)),
-                // Step 4: brief pause for gate to open
+                // Step 2: wait 150ms for gate to open
                 new SleepCommand(150),
-                // Step 5: start intake at full power
+                // Step 3: run intake to push artifact through
                 new InstantCommand(() ->
                         robot.intakeMotor.setPower(Constants.Intake.FORWARD_POWER)),
-                // Step 6: wait for artifact to pass through
-                new SleepCommand(Constants.Flywheel.SHOOT_DURATION_MS),
-                // Step 7: close gate and stop intake
-                // flywheel keeps spinning at current velocity until next input
+                // Step 4: run intake for 2000ms
+                new SleepCommand(2000),
+                // Step 5: close gate and stop intake
+                // flywheel keeps spinning at current velocity
                 new InstantCommand(() -> {
                     robot.gateServo.setPosition(Constants.Gate.CLOSE_POSITION);
                     robot.intakeMotor.setPower(0);
