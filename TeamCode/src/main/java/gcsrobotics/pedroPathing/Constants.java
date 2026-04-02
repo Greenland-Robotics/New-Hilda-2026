@@ -69,10 +69,10 @@ public class Constants {
     // ---- Hood (Axon MAX servo — alliance-independent) ----
     // A = CLOSE, X = MEDIUM, Y = TOP, B = FAR
     public static class Hood {
-        public static final double CLOSE  = 0.8; //a
-        public static final double MEDIUM = 0.6; //x
-        public static final double TOP    = 0.5; //y
-        public static final double FAR    = 0.4; //b
+        public static final double CLOSE  = 1.0; //a
+        public static final double MEDIUM = 0.9; //x
+        public static final double TOP    = 0.8; //y
+        public static final double FAR    = 0.7; //b
     }
 
     // ---- Flywheel (dual goBILDA 6000 RPM, shared shaft) ----
@@ -87,10 +87,10 @@ public class Constants {
 
         // Target velocities in RPM — A=CLOSE, X=MEDIUM, Y=TOP, B=FAR
         // TODO: tune all four values on hardware
-        public static final double VELOCITY_CLOSE  = 2000;  // A — slowest
-        public static final double VELOCITY_MEDIUM = 2500;  // X
-        public static final double VELOCITY_TOP    = 3000;  // Y
-        public static final double VELOCITY_FAR    = 4000;  // B — fastest
+        public static final double VELOCITY_CLOSE  = 2900;  // A — slowest
+        public static final double VELOCITY_MEDIUM = 3200;  // X
+        public static final double VELOCITY_TOP    = 3500;  // Y
+        public static final double VELOCITY_FAR    = 4400;  // B — fastest
 
         public static final double RPM_THRESHOLD       = 0.95;
         public static final long   FLYWHEEL_TIMEOUT_MS = 3000;
