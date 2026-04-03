@@ -69,10 +69,10 @@ public class Constants {
     // ---- Hood (Axon MAX servo — alliance-independent) ----
     // A = CLOSE, X = MEDIUM, Y = TOP, B = FAR
     public static class Hood {
-        public static final double CLOSE  = 1.0; //a
-        public static final double MEDIUM = 0.9; //x
-        public static final double TOP    = 0.8; //y
-        public static final double FAR    = 0.7; //b
+        public static final double CLOSE  = 1.0; //a Last change:
+        public static final double MEDIUM = 0.65; //x Last change:
+        public static final double TOP    = 0.68; //y Last change:
+        public static final double FAR    = 0.55; //b Last change:
     }
 
     // ---- Flywheel (dual goBILDA 6000 RPM, shared shaft) ----
@@ -80,17 +80,23 @@ public class Constants {
     // 28 ticks/rev for goBILDA Yellow Jacket
     // PIDF: tune F first on FTC Dashboard for flat steady-state, then P for ramp
     public static class Flywheel {
-        public static final double PIDF_F = 11.7;
-        public static final double PIDF_P = 0.5;
+        public static final double PIDF_F = 11.5;
+        public static final double PIDF_P = 0.8;
         public static final double PIDF_I = 0.0;
         public static final double PIDF_D = 0.0;
 
         // Target velocities in RPM — A=CLOSE, X=MEDIUM, Y=TOP, B=FAR
         // TODO: tune all four values on hardware
-        public static final double VELOCITY_CLOSE  = 2900;  // A — slowest
-        public static final double VELOCITY_MEDIUM = 3200;  // X
-        public static final double VELOCITY_TOP    = 3500;  // Y
-        public static final double VELOCITY_FAR    = 4400;  // B — fastest
+        public static final double VELOCITY_IDLE  = 2000;   // D-pad up
+        public static final double VELOCITY_CLOSE  = 3500;  // A Last change:
+        public static final double VELOCITY_MEDIUM = 3900;  // X Last change:
+        public static final double VELOCITY_TOP    = 4300;  // Y Last change:
+        public static final double VELOCITY_FAR    = 5200;  // B Last change:
+        // Fire window — RPM tolerance band for gate release
+// Negative = below target allowed, positive = above target blocked
+// Start loose; tighten once shots are consistent
+        public static final double FIRE_WINDOW_LOW  = -150.0; // RPM below target
+        public static final double FIRE_WINDOW_HIGH =  300.0; // RPM above target
 
         public static final double RPM_THRESHOLD       = 0.95;
         public static final long   FLYWHEEL_TIMEOUT_MS = 3000;

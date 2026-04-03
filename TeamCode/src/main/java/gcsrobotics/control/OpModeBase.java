@@ -8,7 +8,6 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.CRServo;
-import com.qualcomm.robotcore.hardware.DistanceSensor;
 
 import gcsrobotics.pedroPathing.Constants;
 import gcsrobotics.vertices.CommandRunner;
@@ -30,13 +29,17 @@ public abstract class OpModeBase extends LinearOpMode {
     public Servo hoodServo;
     public Servo gateServo;
     public CRServo kickstand;
+    public Servo ledLight;
 
     // ---- Odometry ----
     public GoBildaPinpointDriver odo;
 
     // ---- Sensors ----
-    public DigitalChannel shootSensor;    // goBILDA laser in digital/beam-break mode
-    public DistanceSensor transferSensor; // TODO: confirm sensor type for transfer
+    // ---- Sensors ----
+// goBILDA laser sensors in digital/beam-break mode — LOW = beam broken = ball present
+    public DigitalChannel transferSensor;                   // live — wired at transfer
+// public DigitalChannel intakeSensor;                  // not yet wired
+// public DigitalChannel shotSensor;                    // not yet wired
 
     protected abstract void initInternal();
     protected abstract void loopInternal();
@@ -97,7 +100,16 @@ public abstract class OpModeBase extends LinearOpMode {
         // ---- Sensors (commented out until wired) ----
         // shootSensor = hardwareMap.get(DigitalChannel.class, "shootSensor");
         // shootSensor.setMode(DigitalChannel.Mode.INPUT);
-        // transferSensor = hardwareMap.get(DistanceSensor.class, "transferSensor");
+        // ---- Sensors ----
+        transferSensor = hardwareMap.get(DigitalChannel.class, "transferSensor");
+        transferSensor.setMode(DigitalChannel.Mode.INPUT);
+// intakeSensor = hardwareMap.get(DigitalChannel.class, "intakeSensor");
+// intakeSensor.setMode(DigitalChannel.Mode.INPUT);
+// shotSensor = hardwareMap.get(DigitalChannel.class, "shotSensor");
+// shotSensor.setMode(DigitalChannel.Mode.INPUT);
+
+// ---- LED ----
+        ledLight = hardwareMap.get(Servo.class, "ledLight");
     }
 
     // ---- Pose Helpers ----
@@ -107,7 +119,8 @@ public abstract class OpModeBase extends LinearOpMode {
 
     // ---- Flywheel Helpers (all in RPM) ----
     public void setFlywheelVelocity(double rpm) {
-        double ticksPerSec = rpm * TICKS_PER_REV / 60.0;
+        double voltage = hardwareMap.voltageSensor.iterator().next().getVoltage();
+        double ticksPerSec = rpm * TICKS_PER_REV / 60.0 * (12.0 / voltage);
         flywheelLeft.setVelocity(ticksPerSec);
         flywheelRight.setVelocity(ticksPerSec);
     }
@@ -124,7 +137,9 @@ public abstract class OpModeBase extends LinearOpMode {
 
     // ---- Shoot Sensor Helper ----
     // goBILDA laser in digital mode: LOW = beam broken = ball present
-    public boolean isBallAtShooter() {
-        return !shootSensor.getState();
-    }
+    // ---- Sensor Helpers ----
+// goBILDA laser in digital mode: LOW = beam broken = ball present
+    public boolean isBallAtTransfer() { return !transferSensor.getState(); }
+// public boolean isBallAtIntake()  { return !intakeSensor.getState();  }
+// public boolean isBallAtShooter() { return !shotSensor.getState();    }
 }

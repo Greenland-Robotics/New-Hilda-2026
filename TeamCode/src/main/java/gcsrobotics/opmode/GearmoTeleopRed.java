@@ -1,5 +1,7 @@
 package gcsrobotics.opmode;
 
+import static gcsrobotics.pedroPathing.Constants.Flywheel.VELOCITY_IDLE;
+
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -17,6 +19,7 @@ import gcsrobotics.pedroPathing.Constants;
 import gcsrobotics.vertices.ButtonAction;
 import gcsrobotics.vertices.InstantCommand;
 import gcsrobotics.vertices.SeriesCommand;
+
 
 @TeleOp(name = "Gearmo TeleOp — NH Premier", group = "Hilda")
 public class GearmoTeleopRed extends TeleOpBase {
@@ -78,6 +81,7 @@ public class GearmoTeleopRed extends TeleOpBase {
     private ButtonAction hoodFar;
     private ButtonAction shoot;
     private ButtonAction stopFlywheel;
+
 
     // ---- Drive motors ----
     private DcMotorSimple fl;
@@ -203,8 +207,15 @@ public class GearmoTeleopRed extends TeleOpBase {
 
     @Override
     protected void runLoop() {
-
         // =====================================================
+// LED INDICATOR — Artifact detection
+// =====================================================
+        boolean objectDetected = OpModeBase.INSTANCE.isBallAtTransfer();
+        if (objectDetected) {
+            OpModeBase.INSTANCE.ledLight.setPosition(0.5); // Green
+        } else {
+            OpModeBase.INSTANCE.ledLight.setPosition(0.0); // Off
+        }
         // GAMEPAD 1 — DRIVER
         // =====================================================
 
@@ -280,7 +291,6 @@ public class GearmoTeleopRed extends TeleOpBase {
                 OpModeBase.INSTANCE.intakeMotor.setPower(0);
             }
         }
-
         // Hood position + flywheel speed
         // A = CLOSE (slowest), X = MEDIUM, Y = TOP, B = FAR (fastest)
         hoodClose.update(gamepad2.a);
@@ -292,6 +302,20 @@ public class GearmoTeleopRed extends TeleOpBase {
         shoot.update(gamepad2.right_bumper);
         stopFlywheel.update(gamepad2.left_bumper);
 
+        double manualFlywheel = -gamepad2.right_stick_y;
+        if (Math.abs(manualFlywheel) > 0.1) {
+            // Map stick range (-1 to 1) to RPM range (0 to 6000)
+            double targetRPM = manualFlywheel * 6000.0;
+            OpModeBase.INSTANCE.setFlywheelVelocity(targetRPM);
+        }
+        if (gamepad2.dpad_up) {
+            OpModeBase.INSTANCE.setFlywheelVelocity(Constants.Flywheel.VELOCITY_IDLE);
+        }
+        // TEMPORARY TEST — GP2 dpad down = full power flywheel
+        if (gamepad2.dpad_down) {
+            OpModeBase.INSTANCE.flywheelLeft.setPower(1.0);
+            OpModeBase.INSTANCE.flywheelRight.setPower(1.0);
+        }
         // Emergency manual gate override
         if (gamepad2.left_trigger > 0.5) {
             OpModeBase.INSTANCE.gateServo.setPosition(Constants.Gate.OPEN_POSITION);
@@ -302,7 +326,6 @@ public class GearmoTeleopRed extends TeleOpBase {
         // =====================================================
         // TELEMETRY
         // =====================================================
-        telemetry.addData("Alliance",        isBlue ? "BLUE" : "RED");
         telemetry.addData("Hood position",   currentPosition);
         telemetry.addData("Flywheel RPM",    OpModeBase.INSTANCE.getFlywheelVelocity());
         telemetry.addData("Shooting active", !commandRunner.isFinished());
@@ -311,5 +334,8 @@ public class GearmoTeleopRed extends TeleOpBase {
         telemetry.addData("Heading",         Math.toDegrees(
                 OpModeBase.INSTANCE.follower.getPose().getHeading()));
         telemetry.update();
+        telemetry.addData("FL ticks/sec", OpModeBase.INSTANCE.flywheelLeft.getVelocity());
+        telemetry.addData("FR ticks/sec", OpModeBase.INSTANCE.flywheelRight.getVelocity());
+        telemetry.addData("Artifact Detected", OpModeBase.INSTANCE.isBallAtTransfer());
     }
 }
