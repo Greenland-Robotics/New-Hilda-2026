@@ -15,7 +15,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
 public class Constants {
     public static FollowerConstants followerConstants = new FollowerConstants()
-            .mass(1)/* TODO: weigh Hilda in kg */
+            .mass(12.5)
             .forwardZeroPowerAcceleration(-35.408)
             .lateralZeroPowerAcceleration(-75.330);
 
