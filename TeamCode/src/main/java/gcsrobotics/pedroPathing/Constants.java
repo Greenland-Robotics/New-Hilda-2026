@@ -78,7 +78,7 @@ public class Constants {
         public static final double CLOSE  = 1.0; //a Last change:
         public static final double MEDIUM = 0.67; //x Last change:
         public static final double TOP    = 0.68; //y Last change:
-        public static final double FAR    = 0.60; //b Last change: +0.03 57-60
+        public static final double FAR    = 0.65; //b Last change: +0.03 57-60
     }
 
     // ---- Flywheel (dual goBILDA 6000 RPM, shared shaft) ----
