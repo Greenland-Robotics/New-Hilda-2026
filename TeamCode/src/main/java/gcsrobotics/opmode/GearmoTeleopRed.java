@@ -207,6 +207,7 @@ public class GearmoTeleopRed extends TeleOpBase {
 
     @Override
     protected void runLoop() {
+        OpModeBase.INSTANCE.updateFlywheel();
         // =====================================================
 // LED INDICATOR — Artifact detection
 // =====================================================

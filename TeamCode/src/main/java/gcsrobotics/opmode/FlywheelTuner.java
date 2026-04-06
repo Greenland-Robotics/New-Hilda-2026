@@ -75,6 +75,7 @@ public class FlywheelTuner extends TeleOpBase {
     @Override
     protected void initialize() {
         driveMode = false;
+        OpModeBase.INSTANCE.gateServo.setPosition(Constants.Gate.CLOSE_POSITION);
 
         // ---- Position: CLOSE ----
         posClose = new ButtonAction(
@@ -140,6 +141,7 @@ public class FlywheelTuner extends TeleOpBase {
 
     @Override
     protected void runLoop() {
+        OpModeBase.INSTANCE.updateFlywheel();
         double step = STEPS[stepIndex];
 
         // ---- D-pad edge detection for F and P ----
@@ -169,12 +171,17 @@ public class FlywheelTuner extends TeleOpBase {
         double errorRPM   = targetRPM - actualRPM;
         boolean inWindow  = errorRPM >= WINDOW_LOW && errorRPM <= WINDOW_HIGH;
 
-        if (gamepad2.right_bumper && inWindow) {
+        // Fire — only trigger if in window, but don't interrupt once running
+        boolean shootActive = !commandRunner.isFinished();
+        if (gamepad2.right_bumper && (inWindow || shootActive)) {
             fireAction.update(true);
         } else {
             fireAction.update(false);
         }
-
+        telemetry.addData("Bang-bang",
+                OpModeBase.INSTANCE.getFlywheelVelocity() <
+                        currentPosition.targetVelocity * Constants.Flywheel.BANG_BANG_THRESHOLD
+                        ? "ACTIVE" : "off");
         // ---- Stop flywheel ----
         stopAction.update(gamepad2.left_bumper);
 

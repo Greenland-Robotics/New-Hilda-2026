@@ -19,7 +19,7 @@ public abstract class OpModeBase extends LinearOpMode {
 
     // goBILDA 6000 RPM Yellow Jacket — 28 ticks per revolution
     private static final double TICKS_PER_REV = 28.0;
-
+    public double currentTargetRPM = 0.0;
     // ---- Intake ----
     public DcMotorEx intakeMotor;
 
@@ -119,12 +119,30 @@ public abstract class OpModeBase extends LinearOpMode {
 
     // ---- Flywheel Helpers (all in RPM) ----
     public void setFlywheelVelocity(double rpm) {
-        double voltage = hardwareMap.voltageSensor.iterator().next().getVoltage();
-        double ticksPerSec = rpm * TICKS_PER_REV / 60.0 * (12.0 / voltage);
-        flywheelLeft.setVelocity(ticksPerSec);
-        flywheelRight.setVelocity(ticksPerSec);
+        currentTargetRPM = rpm;
     }
+    public void updateFlywheel() {
+        if (currentTargetRPM <= 0) {
+            flywheelLeft.setPower(0);
+            flywheelRight.setPower(0);
+            return;
+        }
 
+        double actualRPM  = getFlywheelVelocity();
+        double threshold  = currentTargetRPM * Constants.Flywheel.BANG_BANG_THRESHOLD;
+
+        if (actualRPM < threshold) {
+            // Bang-bang — blast full power to recover quickly
+            flywheelLeft.setPower(Constants.Flywheel.BANG_BANG_POWER);
+            flywheelRight.setPower(Constants.Flywheel.BANG_BANG_POWER);
+        } else {
+            // PIDF — voltage compensated, called every loop for continuous correction
+            double voltage    = hardwareMap.voltageSensor.iterator().next().getVoltage();
+            double ticksPerSec = currentTargetRPM * TICKS_PER_REV / 60.0 * (12.0 / voltage);
+            flywheelLeft.setVelocity(ticksPerSec);
+            flywheelRight.setVelocity(ticksPerSec);
+        }
+    }
     public void setFlywheelPower(double power) {
         flywheelLeft.setPower(power);
         flywheelRight.setPower(power);

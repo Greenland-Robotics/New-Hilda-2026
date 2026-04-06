@@ -1,7 +1,5 @@
 package gcsrobotics.commands;
 
-import com.qualcomm.robotcore.hardware.DigitalChannel;
-
 import gcsrobotics.control.OpModeBase;
 import gcsrobotics.vertices.Command;
 
@@ -17,9 +15,12 @@ public class IntakeUntilLoaded implements Command {
 
     @Override
     public boolean isFinished() {
-        boolean intake   = !OpModeBase.INSTANCE.intakeSensor.getState();
-        boolean transfer = !OpModeBase.INSTANCE.transferSensor.getState();
-        boolean shoot    = !OpModeBase.INSTANCE.shootSensor.getState();
+        // intakeSensor not yet wired — always satisfied
+        boolean intake   = true;
+        // transferSensor live — beam broken = ball present
+        boolean transfer = OpModeBase.INSTANCE.isBallAtTransfer();
+        // shotSensor not yet wired — always satisfied
+        boolean shoot    = true;
 
         return intake && transfer && shoot;
     }
