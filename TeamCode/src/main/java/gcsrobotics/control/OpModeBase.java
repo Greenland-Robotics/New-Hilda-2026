@@ -1,5 +1,7 @@
 package gcsrobotics.control;
 
+import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.pedropathing.follower.Follower;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -20,6 +22,7 @@ public abstract class OpModeBase extends LinearOpMode {
     // goBILDA 6000 RPM Yellow Jacket — 28 ticks per revolution
     private static final double TICKS_PER_REV = 28.0;
     public double currentTargetRPM = 0.0;
+
     // ---- Intake ----
     public DcMotorEx intakeMotor;
 
@@ -35,11 +38,10 @@ public abstract class OpModeBase extends LinearOpMode {
     public GoBildaPinpointDriver odo;
 
     // ---- Sensors ----
-    // ---- Sensors ----
-// goBILDA laser sensors in digital/beam-break mode — LOW = beam broken = ball present
+    // goBILDA laser sensors in digital/beam-break mode — LOW = beam broken = ball present
     public DigitalChannel transferSensor;                   // live — wired at transfer
-// public DigitalChannel intakeSensor;                  // not yet wired
-// public DigitalChannel shotSensor;                    // not yet wired
+    // public DigitalChannel intakeSensor;                  // not yet wired
+    // public DigitalChannel shotSensor;                    // not yet wired
 
     protected abstract void initInternal();
     protected abstract void loopInternal();
@@ -47,6 +49,13 @@ public abstract class OpModeBase extends LinearOpMode {
     @Override
     public void runOpMode() {
         INSTANCE = this;
+
+        // ── Pipe all telemetry to both Driver Station and FTC Dashboard ──
+        telemetry = new MultipleTelemetry(
+                telemetry,
+                FtcDashboard.getInstance().getTelemetry()
+        );
+
         initHardware();
         follower = Constants.createFollower(hardwareMap);
         initInternal();
@@ -54,8 +63,9 @@ public abstract class OpModeBase extends LinearOpMode {
         waitForStart();
 
         while (opModeIsActive() && !isStopRequested()) {
-            telemetry.update();
             loopInternal();
+            updateFlywheel();
+            telemetry.update();
         }
     }
 
@@ -66,15 +76,15 @@ public abstract class OpModeBase extends LinearOpMode {
         // ---- Intake ----
         intakeMotor = hardwareMap.get(DcMotorEx.class, "intakeMotor");
         intakeMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        intakeMotor.setDirection(DcMotorEx.Direction.FORWARD); // TODO: confirm direction
+        intakeMotor.setDirection(DcMotorEx.Direction.FORWARD);
 
         // ---- Flywheels ----
         flywheelLeft  = hardwareMap.get(DcMotorEx.class, "flywheelLeft");
         flywheelRight = hardwareMap.get(DcMotorEx.class, "flywheelRight");
         flywheelLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         flywheelRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-        flywheelLeft.setDirection(DcMotorEx.Direction.FORWARD);  // TODO: confirm direction
-        flywheelRight.setDirection(DcMotorEx.Direction.REVERSE); // TODO: confirm direction
+        flywheelLeft.setDirection(DcMotorEx.Direction.FORWARD);
+        flywheelRight.setDirection(DcMotorEx.Direction.REVERSE);
 
         // RUN_USING_ENCODER enables velocity PIDF control
         flywheelLeft.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -97,18 +107,11 @@ public abstract class OpModeBase extends LinearOpMode {
         gateServo = hardwareMap.get(Servo.class, "gateServo");
         kickstand = hardwareMap.get(CRServo.class, "kickstand");
 
-        // ---- Sensors (commented out until wired) ----
-        // shootSensor = hardwareMap.get(DigitalChannel.class, "shootSensor");
-        // shootSensor.setMode(DigitalChannel.Mode.INPUT);
         // ---- Sensors ----
         transferSensor = hardwareMap.get(DigitalChannel.class, "transferSensor");
         transferSensor.setMode(DigitalChannel.Mode.INPUT);
-// intakeSensor = hardwareMap.get(DigitalChannel.class, "intakeSensor");
-// intakeSensor.setMode(DigitalChannel.Mode.INPUT);
-// shotSensor = hardwareMap.get(DigitalChannel.class, "shotSensor");
-// shotSensor.setMode(DigitalChannel.Mode.INPUT);
 
-// ---- LED ----
+        // ---- LED ----
         ledLight = hardwareMap.get(Servo.class, "ledLight");
     }
 
@@ -118,9 +121,15 @@ public abstract class OpModeBase extends LinearOpMode {
     protected double getHeading() { return follower.getPose().getHeading(); }
 
     // ---- Flywheel Helpers (all in RPM) ----
+
     public void setFlywheelVelocity(double rpm) {
         currentTargetRPM = rpm;
     }
+
+    // Three-zone control:
+    //   Zone 1 (below threshold) — bang-bang: full power to recover quickly
+    //   Zone 2 (above target by >2%) — coast: let RPM drop naturally
+    //   Zone 3 (in range) — PIDF with voltage compensation for steady-state accuracy
     public void updateFlywheel() {
         if (currentTargetRPM <= 0) {
             flywheelLeft.setPower(0);
@@ -130,19 +139,25 @@ public abstract class OpModeBase extends LinearOpMode {
 
         double actualRPM  = getFlywheelVelocity();
         double threshold  = currentTargetRPM * Constants.Flywheel.BANG_BANG_THRESHOLD;
+        double upperBound = currentTargetRPM * 1.02;
 
         if (actualRPM < threshold) {
-            // Bang-bang — blast full power to recover quickly
+            // Zone 1 — below threshold, blast to recover quickly
             flywheelLeft.setPower(Constants.Flywheel.BANG_BANG_POWER);
             flywheelRight.setPower(Constants.Flywheel.BANG_BANG_POWER);
-        } else {
-            // PIDF — voltage compensated, called every loop for continuous correction
-            double voltage    = hardwareMap.voltageSensor.iterator().next().getVoltage();
+        } /* else if (actualRPM > upperBound) {
+            // Zone 2 — above target, coast to let RPM drop naturally
+            flywheelLeft.setPower(0);
+            flywheelRight.setPower(0);
+        } */ else {
+            // Zone 3 — in range, PIDF with voltage compensation
+            double voltage     = hardwareMap.voltageSensor.iterator().next().getVoltage();
             double ticksPerSec = currentTargetRPM * TICKS_PER_REV / 60.0 * (12.0 / voltage);
             flywheelLeft.setVelocity(ticksPerSec);
             flywheelRight.setVelocity(ticksPerSec);
         }
     }
+
     public void setFlywheelPower(double power) {
         flywheelLeft.setPower(power);
         flywheelRight.setPower(power);
@@ -150,14 +165,9 @@ public abstract class OpModeBase extends LinearOpMode {
 
     public double getFlywheelVelocity() {
         double avgTicks = (flywheelLeft.getVelocity() + flywheelRight.getVelocity()) / 2.0;
-        return avgTicks * 60.0 / TICKS_PER_REV; // returns RPM
+        return avgTicks * 60.0 / TICKS_PER_REV;
     }
 
-    // ---- Shoot Sensor Helper ----
-    // goBILDA laser in digital mode: LOW = beam broken = ball present
     // ---- Sensor Helpers ----
-// goBILDA laser in digital mode: LOW = beam broken = ball present
     public boolean isBallAtTransfer() { return !transferSensor.getState(); }
-// public boolean isBallAtIntake()  { return !intakeSensor.getState();  }
-// public boolean isBallAtShooter() { return !shotSensor.getState();    }
 }

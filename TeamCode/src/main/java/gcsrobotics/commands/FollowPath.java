@@ -16,23 +16,30 @@ public class FollowPath implements Command {
     public FollowPath(PathChain path) {
         this.path = path;
     }
+
     public FollowPath(Path path) {
         this.path = r.follower.pathBuilder().addPath(path).build();
     }
+
     public FollowPath(Pose... poses) {
         if (poses.length >= 3) {
-            this.path = r.follower.pathBuilder().addPath(new Path(new BezierCurve(poses))).build();
+            this.path = r.follower.pathBuilder()
+                    .addPath(new Path(new BezierCurve(poses)))
+                    .build();
         } else if (poses.length == 2) {
-            this.path = r.follower.pathBuilder().addPath(new Path(new BezierLine(poses[0], poses[1]))).build();
+            this.path = r.follower.pathBuilder()
+                    .addPath(new Path(new BezierLine(poses[0], poses[1])))
+                    .setLinearHeadingInterpolation(
+                            poses[0].getHeading(), poses[1].getHeading())
+                    .build();
         } else {
             throw new IllegalArgumentException("Path must have at least 2 points");
         }
     }
 
-
     @Override
     public void init() {
-        r.follower.followPath(path);
+        r.follower.followPath(path, false); // false = don't reset pose
     }
 
     @Override
