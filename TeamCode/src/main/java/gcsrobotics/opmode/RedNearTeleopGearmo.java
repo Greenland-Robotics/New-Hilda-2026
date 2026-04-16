@@ -18,8 +18,8 @@ import gcsrobotics.vertices.InstantCommand;
 import gcsrobotics.vertices.ParallelCommand;
 import gcsrobotics.vertices.SeriesCommand;
 
-@TeleOp(name = "BLUE FAR TeleOp — NH Premier", group = "Hilda")
-public class BlueTeleopGearmo extends TeleOpBase {
+@TeleOp(name = "RED NEAR TeleOp — NH Premier", group = "Hilda")
+public class RedNearTeleopGearmo extends TeleOpBase {
 
     // ============================================================
     //  GAMEPAD 1 — DRIVER
@@ -38,7 +38,7 @@ public class BlueTeleopGearmo extends TeleOpBase {
     //  D-pad Down          Retract kickstand (hold) / stop on release
     //  D-pad Right         GoToHumanPlayer
     //  D-pad Left          Park
-    //  Back (Share)        Reset Pedro pose to BLUE_RESET_POSE (human player corner)
+    //  Back (Share)        Reset Pedro pose to RED_RESET_POSE (human player corner)
     //  Any stick > 0.3     Cancel snap path — return to manual drive
     //
     //  GAMEPAD 2 — OPERATOR
@@ -61,7 +61,7 @@ public class BlueTeleopGearmo extends TeleOpBase {
     // ============================================================
 
     // ---- Alliance — hardcoded BLUE ----
-    private final boolean isBlue = true;
+    private final boolean isBlue = false;
 
     // ---- Current shooting position ----
     private ShootingPosition currentPosition = ShootingPosition.CLOSE;
@@ -122,16 +122,16 @@ public class BlueTeleopGearmo extends TeleOpBase {
 
         gateServo.setPosition(Constants.Gate.CLOSE_POSITION);
 
-        follower.setStartingPose(Constants.SnapPositions.BLUE_FAR_START);
+        follower.setStartingPose(Constants.SnapPositions.RED_NEAR_START);
 
         buildActions();
 
         telemetry.addData("Status",     "Initialized");
-        telemetry.addData("Alliance",   "BLUE");
-        telemetry.addData("Start Pose", "BLUE_FAR_START (%.1f, %.1f, %.1f°)",
-                Constants.SnapPositions.BLUE_FAR_START.getX(),
-                Constants.SnapPositions.BLUE_FAR_START.getY(),
-                Math.toDegrees(Constants.SnapPositions.BLUE_FAR_START.getHeading()));
+        telemetry.addData("Alliance",   "RED");
+        telemetry.addData("Start Pose", "RED_NEAR_START (%.1f, %.1f, %.1f°)",
+                Constants.SnapPositions.RED_NEAR_START.getX(),
+                Constants.SnapPositions.RED_NEAR_START.getY(),
+                Math.toDegrees(Constants.SnapPositions.RED_NEAR_START.getHeading()));
         telemetry.update();
     }
 
@@ -139,7 +139,7 @@ public class BlueTeleopGearmo extends TeleOpBase {
 
         snapClose = new ButtonAction(
                 () -> new ParallelCommand(
-                        new FollowPath(follower.getPose(), Constants.SnapPositions.BLUE_CLOSE),
+                        new FollowPath(follower.getPose(), Constants.SnapPositions.RED_CLOSE),
                         new SeriesCommand(
                                 new InstantCommand(() -> {
                                     currentPosition = ShootingPosition.CLOSE;
@@ -151,7 +151,7 @@ public class BlueTeleopGearmo extends TeleOpBase {
         );
         snapMedium = new ButtonAction(
                 () -> new ParallelCommand(
-                        new FollowPath(follower.getPose(), Constants.SnapPositions.BLUE_MEDIUM),
+                        new FollowPath(follower.getPose(), Constants.SnapPositions.RED_MEDIUM),
                         new SeriesCommand(
                                 new InstantCommand(() -> {
                                     currentPosition = ShootingPosition.MEDIUM;
@@ -163,7 +163,7 @@ public class BlueTeleopGearmo extends TeleOpBase {
         );
         snapTop = new ButtonAction(
                 () -> new ParallelCommand(
-                        new FollowPath(follower.getPose(), Constants.SnapPositions.BLUE_TOP),
+                        new FollowPath(follower.getPose(), Constants.SnapPositions.RED_TOP),
                         new SeriesCommand(
                                 new InstantCommand(() -> {
                                     currentPosition = ShootingPosition.TOP;
@@ -175,7 +175,7 @@ public class BlueTeleopGearmo extends TeleOpBase {
         );
         snapFar = new ButtonAction(
                 () -> new ParallelCommand(
-                        new FollowPath(follower.getPose(), Constants.SnapPositions.BLUE_FAR),
+                        new FollowPath(follower.getPose(), Constants.SnapPositions.RED_FAR),
                         new SeriesCommand(
                                 new InstantCommand(() -> {
                                     currentPosition = ShootingPosition.FAR;

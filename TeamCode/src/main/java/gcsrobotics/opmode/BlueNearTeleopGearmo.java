@@ -18,8 +18,8 @@ import gcsrobotics.vertices.InstantCommand;
 import gcsrobotics.vertices.ParallelCommand;
 import gcsrobotics.vertices.SeriesCommand;
 
-@TeleOp(name = "BLUE FAR TeleOp — NH Premier", group = "Hilda")
-public class BlueTeleopGearmo extends TeleOpBase {
+@TeleOp(name = "BLUE NEAR TeleOp — NH Premier", group = "Hilda")
+public class BlueNearTeleopGearmo extends TeleOpBase {
 
     // ============================================================
     //  GAMEPAD 1 — DRIVER
@@ -122,16 +122,16 @@ public class BlueTeleopGearmo extends TeleOpBase {
 
         gateServo.setPosition(Constants.Gate.CLOSE_POSITION);
 
-        follower.setStartingPose(Constants.SnapPositions.BLUE_FAR_START);
+        follower.setStartingPose(Constants.SnapPositions.BLUE_NEAR_START);
 
         buildActions();
 
         telemetry.addData("Status",     "Initialized");
         telemetry.addData("Alliance",   "BLUE");
-        telemetry.addData("Start Pose", "BLUE_FAR_START (%.1f, %.1f, %.1f°)",
-                Constants.SnapPositions.BLUE_FAR_START.getX(),
-                Constants.SnapPositions.BLUE_FAR_START.getY(),
-                Math.toDegrees(Constants.SnapPositions.BLUE_FAR_START.getHeading()));
+        telemetry.addData("Start Pose", "BLUE_NEAR_START (%.1f, %.1f, %.1f°)",
+                Constants.SnapPositions.BLUE_NEAR_START.getX(),
+                Constants.SnapPositions.BLUE_NEAR_START.getY(),
+                Math.toDegrees(Constants.SnapPositions.BLUE_NEAR_START.getHeading()));
         telemetry.update();
     }
 
@@ -377,5 +377,4 @@ public class BlueTeleopGearmo extends TeleOpBase {
         telemetry.update();
     }
 }
-
 

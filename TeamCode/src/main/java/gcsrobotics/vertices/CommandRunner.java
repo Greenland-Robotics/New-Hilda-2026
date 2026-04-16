@@ -3,6 +3,7 @@ package gcsrobotics.vertices;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
 public class CommandRunner {
     private final List<Command> commands = new ArrayList<>();
 
@@ -29,8 +30,7 @@ public class CommandRunner {
 
             if (command.isFinished()) {
                 commands.remove(i);
-            }
-            else {
+            } else {
                 i++;
             }
         }
@@ -43,5 +43,10 @@ public class CommandRunner {
 
     public boolean isFinished() {
         return commands.isEmpty();
+    }
+
+    // ── Cancel all running commands — used for driver override during snap paths ──
+    public void cancel() {
+        commands.clear();
     }
 }

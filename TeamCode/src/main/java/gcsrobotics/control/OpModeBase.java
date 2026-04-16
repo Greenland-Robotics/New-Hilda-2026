@@ -112,7 +112,10 @@ public abstract class OpModeBase extends LinearOpMode {
         transferSensor.setMode(DigitalChannel.Mode.INPUT);
 
         // ---- LED ----
+        // Initialized to OFF so servo output is defined from boot
+        // If LED appears stuck ON, change OFF constant to 0.05 in Constants.LED
         ledLight = hardwareMap.get(Servo.class, "ledLight");
+        ledLight.setPosition(Constants.LED.OFF);
     }
 
     // ---- Pose Helpers ----
@@ -169,5 +172,5 @@ public abstract class OpModeBase extends LinearOpMode {
     }
 
     // ---- Sensor Helpers ----
-    public boolean isBallAtTransfer() { return !transferSensor.getState(); }
+    public boolean isBallAtTransfer() { return transferSensor.getState(); }
 }

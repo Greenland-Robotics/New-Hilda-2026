@@ -1,5 +1,6 @@
 package gcsrobotics.pedroPathing;
 
+import com.pedropathing.control.FilteredPIDFCoefficients;
 import com.pedropathing.control.PIDFCoefficients;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.follower.FollowerConstants;
@@ -17,17 +18,19 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 public class Constants {
 
     public static FollowerConstants followerConstants = new FollowerConstants()
-            .mass(14.8)                                                          // ORIGINAL — 14.8 kg (correct)
-            .forwardZeroPowerAcceleration(-27.6)
-            .lateralZeroPowerAcceleration(-75.330)                              // FIXED: tuned value (was -96.0)
-            .headingPIDFCoefficients(new PIDFCoefficients(3.0, 0, 0.20, 0))    // ORIGINAL
-            .translationalPIDFCoefficients(new PIDFCoefficients(0.04, 0, 0.030, 0.015)) // ORIGINAL
-            .centripetalScaling(0.0005);
+            .mass(14.8)
+            .forwardZeroPowerAcceleration(-47.0)                                // TUNED: measured value
+            .lateralZeroPowerAcceleration(-75.330)
+            .headingPIDFCoefficients(new PIDFCoefficients(3.0, 0, 0.25, 0))    // D bumped to dampen heading overshoot
+            .translationalPIDFCoefficients(new PIDFCoefficients(0.05, 0, 0.01, 0.015)) // restored — D was larger than P causing wiggle
+            .drivePIDFCoefficients(new FilteredPIDFCoefficients(0.014, 0, 0.0035, 0.6, 0))
+            .centripetalScaling(0.0009);
+
 
     public static MecanumConstants driveConstants = new MecanumConstants()
             .maxPower(1)
-            .xVelocity(75.855)
-            .yVelocity(57.917)
+            .xVelocity(73.5)    // TUNED
+            .yVelocity(53.0)    // TUNED
             .rightFrontMotorName("fr")
             .rightRearMotorName("br")
             .leftRearMotorName("bl")
@@ -55,9 +58,9 @@ public class Constants {
             0.1,                 // translationalConstraint
             Math.toRadians(1.5), // headingConstraint — 1.5 degrees
             50,                  // timeoutConstraint
-            1.25,                // brakingStrength — ORIGINAL
+            2,                 // brakingStrength
             10,                  // BEZIER_CURVE_SEARCH_LIMIT
-            1                    // brakingStart — ORIGINAL
+            1.5                  // brakingStart
     );
 
     public static PinpointConstants localizerConstants = new PinpointConstants()
@@ -139,7 +142,8 @@ public class Constants {
         public static final Pose RED_MEDIUM    = new Pose(90,    96, Math.toRadians(46));
         public static final Pose RED_TOP       = new Pose(73,    76, Math.toRadians(48.5));
         public static final Pose RED_FAR       = new Pose(77.4, 19.2, Math.toRadians(72.2));
-        public static final Pose RED_FAR_START = new Pose(80,    9,  Math.toRadians(90));
+        public static final Pose RED_FAR_START = new Pose(113,    9,  Math.toRadians(0));
+        public static final Pose RED_NEAR_START = new Pose(126.6,    50,  Math.toRadians(45));
 
         // ---- RED utility poses ----
         public static final Pose RED_HUMAN_PLAYER = new Pose(36,  12, Math.toRadians(180));
@@ -158,9 +162,10 @@ public class Constants {
         public static final Pose BLUE_HUMAN_PLAYER = new Pose(108, 12, Math.toRadians(0));
         public static final Pose BLUE_PARK         = new Pose(107, 32, Math.toRadians(0));
         public static final Pose BLUE_FAR_START    = new Pose(64,   9, Math.toRadians(90));
+        public static final Pose BLUE_NEAR_START    = new Pose(17.4,   50, Math.toRadians(135));
 
         // ---- BLUE pose reset — robot backed against near wall ----
-        public static final Pose BLUE_RESET_POSE   = new Pose(134.5, 8, Math.toRadians(0));
+        public static final Pose BLUE_RESET_POSE   = new Pose(31, 9, Math.toRadians(180));
     }
 
     // ---- Intake ----

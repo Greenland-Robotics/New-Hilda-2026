@@ -1,8 +1,5 @@
 package gcsrobotics.opmode;
 
-import static gcsrobotics.pedroPathing.Constants.SnapPositions.RED_FAR_START;
-
-import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -21,8 +18,7 @@ import gcsrobotics.vertices.InstantCommand;
 import gcsrobotics.vertices.ParallelCommand;
 import gcsrobotics.vertices.SeriesCommand;
 
-
-@TeleOp(name = "RED TeleOp — NH Premier", group = "Hilda")
+@TeleOp(name = "RED FAR TeleOp — NH Premier", group = "Hilda")
 public class RedTeleopGearmo extends TeleOpBase {
 
     // ============================================================
@@ -42,9 +38,8 @@ public class RedTeleopGearmo extends TeleOpBase {
     //  D-pad Down          Retract kickstand (hold) / stop on release
     //  D-pad Right         GoToHumanPlayer
     //  D-pad Left          Park
-    //  Back                Reset Pedro pose to RED_RESET_POSE (near wall)
-    //  Start + A           Set alliance → BLUE
-    //  Start + B           Set alliance → RED
+    //  Back (Share)        Reset Pedro pose to RED_RESET_POSE (human player corner)
+    //  Any stick > 0.3     Cancel snap path — return to manual drive
     //
     //  GAMEPAD 2 — OPERATOR
     //  Left stick Y        Intake (forward = in, pull back = unjam)
@@ -58,21 +53,23 @@ public class RedTeleopGearmo extends TeleOpBase {
     //  Right bumper        Shoot at current position
     //  Left bumper         Flywheel → IDLE speed
     //  Back button         Flywheel → ZERO (full stop)
+    //  Select              Flywheel → IDLE speed
+    //  D-pad left          Close gate
     //  Right stick Y       Manual flywheel speed (0–6000 RPM)
     //  D-pad up            Add 10 RPM to all shot velocities (cumulative)
     //  D-pad down          Subtract 10 RPM from all shot velocities (cumulative)
     // ============================================================
 
-    // ---- Alliance ----
-    private boolean isBlue = false; // Red teleop — default false
+    // ---- Alliance — hardcoded BLUE ----
+    private final boolean isBlue = false;
 
-    // ---- Current shooting position (updated by GP2 A/X/Y/B) ----
+    // ---- Current shooting position ----
     private ShootingPosition currentPosition = ShootingPosition.CLOSE;
 
-    // ---- Global RPM offset — adjusted via GP2 D-pad up/down, resets on restart ----
+    // ---- Global RPM offset ----
     private double rpmOffset = 0.0;
 
-    // ---- D-pad edge detection for RPM offset ----
+    // ---- D-pad edge detection ----
     private boolean prevDpadUp   = false;
     private boolean prevDpadDown = false;
 
@@ -96,6 +93,7 @@ public class RedTeleopGearmo extends TeleOpBase {
     private ButtonAction shoot;
     private ButtonAction idleFlywheel;
     private ButtonAction zeroFlywheel;
+    private ButtonAction closeGate;
 
     // ---- Drive motors ----
     private DcMotor fl;
@@ -106,52 +104,46 @@ public class RedTeleopGearmo extends TeleOpBase {
 
     @Override
     protected void initialize() {
-        // Disable Pedro's built-in drive — we control motors directly
         driveMode = false;
 
         kickstand = new KickstandSubsystem(
                 hardwareMap.get(CRServo.class, Constants.Kickstand.MOTOR_NAME)
         );
 
-        // ---- Drive motors ----
         fl = hardwareMap.get(DcMotor.class, "fl");
         fr = hardwareMap.get(DcMotor.class, "fr");
         bl = hardwareMap.get(DcMotor.class, "bl");
         br = hardwareMap.get(DcMotor.class, "br");
 
-        // ---- Brake on zero power ----
         fl.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         fr.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         bl.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         br.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        // ---- Close gate on init ----
         gateServo.setPosition(Constants.Gate.CLOSE_POSITION);
 
-        // ---- Set starting pose for absolute field coordinate tracking ----
-        follower.setStartingPose(RED_FAR_START);
+        follower.setStartingPose(Constants.SnapPositions.RED_FAR_START);
 
         buildActions();
 
-        telemetry.addData("Status",   "Initialized");
-        telemetry.addData("Alliance", "RED");
+        telemetry.addData("Status",     "Initialized");
+        telemetry.addData("Alliance",   "RED");
+        telemetry.addData("Start Pose", "RED_FAR_START (%.1f, %.1f, %.1f°)",
+                Constants.SnapPositions.RED_FAR_START.getX(),
+                Constants.SnapPositions.RED_FAR_START.getY(),
+                Math.toDegrees(Constants.SnapPositions.RED_FAR_START.getHeading()));
         telemetry.update();
     }
 
     private void buildActions() {
 
-        // ---- GP1: Snap to shooting positions ----
         snapClose = new ButtonAction(
                 () -> new ParallelCommand(
-                        new FollowPath(
-                                follower.getPose(),
-                                isBlue ? Constants.SnapPositions.BLUE_CLOSE
-                                        : Constants.SnapPositions.RED_CLOSE),
+                        new FollowPath(follower.getPose(), Constants.SnapPositions.RED_CLOSE),
                         new SeriesCommand(
                                 new InstantCommand(() -> {
                                     currentPosition = ShootingPosition.CLOSE;
-                                    setFlywheelVelocity(
-                                            Constants.Flywheel.VELOCITY_CLOSE + rpmOffset);
+                                    setFlywheelVelocity(Constants.Flywheel.VELOCITY_CLOSE + rpmOffset);
                                 }),
                                 new SetHoodAngle(ShootingPosition.CLOSE)
                         )
@@ -159,15 +151,11 @@ public class RedTeleopGearmo extends TeleOpBase {
         );
         snapMedium = new ButtonAction(
                 () -> new ParallelCommand(
-                        new FollowPath(
-                                follower.getPose(),
-                                isBlue ? Constants.SnapPositions.BLUE_MEDIUM
-                                        : Constants.SnapPositions.RED_MEDIUM),
+                        new FollowPath(follower.getPose(), Constants.SnapPositions.RED_MEDIUM),
                         new SeriesCommand(
                                 new InstantCommand(() -> {
                                     currentPosition = ShootingPosition.MEDIUM;
-                                    setFlywheelVelocity(
-                                            Constants.Flywheel.VELOCITY_MEDIUM + rpmOffset);
+                                    setFlywheelVelocity(Constants.Flywheel.VELOCITY_MEDIUM + rpmOffset);
                                 }),
                                 new SetHoodAngle(ShootingPosition.MEDIUM)
                         )
@@ -175,15 +163,11 @@ public class RedTeleopGearmo extends TeleOpBase {
         );
         snapTop = new ButtonAction(
                 () -> new ParallelCommand(
-                        new FollowPath(
-                                follower.getPose(),
-                                isBlue ? Constants.SnapPositions.BLUE_TOP
-                                        : Constants.SnapPositions.RED_TOP),
+                        new FollowPath(follower.getPose(), Constants.SnapPositions.RED_TOP),
                         new SeriesCommand(
                                 new InstantCommand(() -> {
                                     currentPosition = ShootingPosition.TOP;
-                                    setFlywheelVelocity(
-                                            Constants.Flywheel.VELOCITY_TOP + rpmOffset);
+                                    setFlywheelVelocity(Constants.Flywheel.VELOCITY_TOP + rpmOffset);
                                 }),
                                 new SetHoodAngle(ShootingPosition.TOP)
                         )
@@ -191,22 +175,17 @@ public class RedTeleopGearmo extends TeleOpBase {
         );
         snapFar = new ButtonAction(
                 () -> new ParallelCommand(
-                        new FollowPath(
-                                follower.getPose(),
-                                isBlue ? Constants.SnapPositions.BLUE_FAR
-                                        : Constants.SnapPositions.RED_FAR),
+                        new FollowPath(follower.getPose(), Constants.SnapPositions.RED_FAR),
                         new SeriesCommand(
                                 new InstantCommand(() -> {
                                     currentPosition = ShootingPosition.FAR;
-                                    setFlywheelVelocity(
-                                            Constants.Flywheel.VELOCITY_FAR + rpmOffset);
+                                    setFlywheelVelocity(Constants.Flywheel.VELOCITY_FAR + rpmOffset);
                                 }),
                                 new SetHoodAngle(ShootingPosition.FAR)
                         )
                 ), commandRunner
         );
 
-        // ---- GP1: D-pad ----
         goToHumanPlayer = new ButtonAction(
                 () -> new GoToHumanPlayer(isBlue), commandRunner
         );
@@ -214,22 +193,18 @@ public class RedTeleopGearmo extends TeleOpBase {
                 () -> new Park(isBlue), commandRunner
         );
 
-        // ---- GP1: Back — reset Pedro pose to known wall position ----
         resetPose = new ButtonAction(
                 () -> new InstantCommand(() ->
-                        follower.setStartingPose(
-                                isBlue ? Constants.SnapPositions.BLUE_RESET_POSE
-                                        : Constants.SnapPositions.RED_RESET_POSE)),
+                        follower.setPose(Constants.SnapPositions.BLUE_RESET_POSE)),
                 commandRunner
         );
 
-        // ---- GP2: Hood position + flywheel speed ----
+
         hoodClose = new ButtonAction(
                 () -> new SeriesCommand(
                         new InstantCommand(() -> {
                             currentPosition = ShootingPosition.CLOSE;
-                            setFlywheelVelocity(
-                                    Constants.Flywheel.VELOCITY_CLOSE + rpmOffset);
+                            setFlywheelVelocity(Constants.Flywheel.VELOCITY_CLOSE + rpmOffset);
                         }),
                         new SetHoodAngle(ShootingPosition.CLOSE)
                 ), commandRunner
@@ -238,8 +213,7 @@ public class RedTeleopGearmo extends TeleOpBase {
                 () -> new SeriesCommand(
                         new InstantCommand(() -> {
                             currentPosition = ShootingPosition.MEDIUM;
-                            setFlywheelVelocity(
-                                    Constants.Flywheel.VELOCITY_MEDIUM + rpmOffset);
+                            setFlywheelVelocity(Constants.Flywheel.VELOCITY_MEDIUM + rpmOffset);
                         }),
                         new SetHoodAngle(ShootingPosition.MEDIUM)
                 ), commandRunner
@@ -248,8 +222,7 @@ public class RedTeleopGearmo extends TeleOpBase {
                 () -> new SeriesCommand(
                         new InstantCommand(() -> {
                             currentPosition = ShootingPosition.TOP;
-                            setFlywheelVelocity(
-                                    Constants.Flywheel.VELOCITY_TOP + rpmOffset);
+                            setFlywheelVelocity(Constants.Flywheel.VELOCITY_TOP + rpmOffset);
                         }),
                         new SetHoodAngle(ShootingPosition.TOP)
                 ), commandRunner
@@ -258,28 +231,25 @@ public class RedTeleopGearmo extends TeleOpBase {
                 () -> new SeriesCommand(
                         new InstantCommand(() -> {
                             currentPosition = ShootingPosition.FAR;
-                            setFlywheelVelocity(
-                                    Constants.Flywheel.VELOCITY_FAR + rpmOffset);
+                            setFlywheelVelocity(Constants.Flywheel.VELOCITY_FAR + rpmOffset);
                         }),
                         new SetHoodAngle(ShootingPosition.FAR)
                 ), commandRunner
         );
 
-        // ---- GP2: Shoot at current position ----
         shoot = new ButtonAction(
                 () -> new ShootCurrent(() -> currentPosition), commandRunner
         );
-
-        // ---- GP2: Left bumper → idle speed ----
         idleFlywheel = new ButtonAction(
-                () -> new InstantCommand(() ->
-                        setFlywheelVelocity(Constants.Flywheel.VELOCITY_IDLE)),
+                () -> new InstantCommand(() -> setFlywheelVelocity(Constants.Flywheel.VELOCITY_IDLE)),
                 commandRunner
         );
-
-        // ---- GP2: Back button → full stop ----
         zeroFlywheel = new ButtonAction(
                 () -> new InstantCommand(() -> setFlywheelVelocity(0)),
+                commandRunner
+        );
+        closeGate = new ButtonAction(
+                () -> new InstantCommand(() -> gateServo.setPosition(Constants.Gate.CLOSE_POSITION)),
                 commandRunner
         );
     }
@@ -287,6 +257,19 @@ public class RedTeleopGearmo extends TeleOpBase {
     @Override
     protected void runLoop() {
         updateFlywheel();
+
+        // =====================================================
+        // DRIVER OVERRIDE — cancel snap path on stick input
+        // =====================================================
+        boolean driverOverride = follower.isBusy() && (
+                Math.abs(gamepad1.left_stick_y)  > 0.3 ||
+                        Math.abs(gamepad1.left_stick_x)  > 0.3 ||
+                        Math.abs(gamepad1.right_stick_x) > 0.3);
+
+        if (driverOverride) {
+            commandRunner.cancel();
+            follower.startTeleopDrive();
+        }
 
         // =====================================================
         // LED INDICATOR — Artifact detection
@@ -308,27 +291,20 @@ public class RedTeleopGearmo extends TeleOpBase {
         } else if (gamepad1.right_bumper) {
             horizontal = 1.0;
         } else {
-            double stick = Math.abs(gamepad1.left_stick_x) > 0.1
-                    ? gamepad1.left_stick_x : 0;
-            double rTrig = Math.abs(gamepad1.right_trigger) > 0.1
-                    ? gamepad1.right_trigger : 0;
-            double lTrig = Math.abs(gamepad1.left_trigger) > 0.1
-                    ? gamepad1.left_trigger : 0;
+            double stick = Math.abs(gamepad1.left_stick_x) > 0.1 ? gamepad1.left_stick_x : 0;
+            double rTrig = Math.abs(gamepad1.right_trigger) > 0.1 ? gamepad1.right_trigger : 0;
+            double lTrig = Math.abs(gamepad1.left_trigger) > 0.1 ? gamepad1.left_trigger : 0;
             horizontal = stick + rTrig - lTrig;
         }
 
-        double forward = Math.abs(gamepad1.left_stick_y) > 0.1
-                ? -gamepad1.left_stick_y : 0;
-
-        double pivot = Math.abs(gamepad1.right_stick_x) > 0.1
-                ? gamepad1.right_stick_x : 0;
+        double forward = Math.abs(gamepad1.left_stick_y) > 0.1 ? -gamepad1.left_stick_y : 0;
+        double pivot   = Math.abs(gamepad1.right_stick_x) > 0.1 ? gamepad1.right_stick_x : 0;
 
         if (gamepad2.right_trigger > 0.1) {
             pivot += gamepad2.right_trigger * 0.5;
         } else if (gamepad2.left_trigger > 0.1) {
             pivot -= gamepad2.left_trigger * 0.5;
         }
-
         pivot = Math.max(-1.0, Math.min(1.0, pivot));
 
         if (!follower.isBusy()) {
@@ -338,37 +314,18 @@ public class RedTeleopGearmo extends TeleOpBase {
             br.setPower(speed * (forward + horizontal - pivot));
         }
 
-        // Alliance selection (Start + face button)
-        if (gamepad1.start && gamepad1.a) {
-            isBlue = true;
-            buildActions();
-        }
-        if (gamepad1.start && gamepad1.b) {
-            isBlue = false;
-            buildActions();
-        }
-
-        // Snap to shooting position (suppressed during Start combos)
         snapClose.update(gamepad1.a && !gamepad1.start);
         snapMedium.update(gamepad1.x && !gamepad1.start);
         snapTop.update(gamepad1.y && !gamepad1.start);
         snapFar.update(gamepad1.b && !gamepad1.start);
 
-        // D-pad path commands
         goToHumanPlayer.update(gamepad1.dpad_right);
         pathToPark.update(gamepad1.dpad_left);
-
-        // Pose reset — robot must be physically at near wall
         resetPose.update(gamepad1.back);
 
-        // Kickstand — runs while held, stops on release
-        if (gamepad1.dpad_up) {
-            kickstand.deploy();
-        } else if (gamepad1.dpad_down) {
-            kickstand.retract();
-        } else {
-            kickstand.stop();
-        }
+        if (gamepad1.dpad_up)        kickstand.deploy();
+        else if (gamepad1.dpad_down) kickstand.retract();
+        else                         kickstand.stop();
 
         // =====================================================
         // GAMEPAD 2 — OPERATOR
@@ -376,11 +333,7 @@ public class RedTeleopGearmo extends TeleOpBase {
 
         if (commandRunner.isFinished()) {
             double intakePower = gamepad2.left_stick_y;
-            if (Math.abs(intakePower) > 0.1) {
-                intakeMotor.setPower(intakePower);
-            } else {
-                intakeMotor.setPower(0);
-            }
+            intakeMotor.setPower(Math.abs(intakePower) > 0.1 ? intakePower : 0);
         }
 
         hoodClose.update(gamepad2.a);
@@ -391,15 +344,13 @@ public class RedTeleopGearmo extends TeleOpBase {
         shoot.update(gamepad2.right_bumper);
         idleFlywheel.update(gamepad2.left_bumper);
         zeroFlywheel.update(gamepad2.back);
+        closeGate.update(gamepad2.dpad_left);
 
         double manualFlywheel = -gamepad2.right_stick_y;
-        if (Math.abs(manualFlywheel) > 0.1) {
-            setFlywheelVelocity(manualFlywheel * 6000.0);
-        }
+        if (Math.abs(manualFlywheel) > 0.1) setFlywheelVelocity(manualFlywheel * 6000.0);
 
         boolean dpadUp   = gamepad2.dpad_up;
         boolean dpadDown = gamepad2.dpad_down;
-
         if (dpadUp && !prevDpadUp) {
             rpmOffset += 10.0;
             setFlywheelVelocity(currentPosition.targetVelocity + rpmOffset);
@@ -422,8 +373,9 @@ public class RedTeleopGearmo extends TeleOpBase {
         telemetry.addLine("---");
         telemetry.addData("Pedro X",           "%.2f", follower.getPose().getX());
         telemetry.addData("Pedro Y",           "%.2f", follower.getPose().getY());
-        telemetry.addData("Heading (deg)",     "%.1f",
-                Math.toDegrees(follower.getPose().getHeading()));
+        telemetry.addData("Heading (deg)",     "%.1f", Math.toDegrees(follower.getPose().getHeading()));
         telemetry.update();
     }
 }
+
+
