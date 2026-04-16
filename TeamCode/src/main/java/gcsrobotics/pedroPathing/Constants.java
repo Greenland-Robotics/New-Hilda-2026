@@ -1,5 +1,6 @@
 package gcsrobotics.pedroPathing;
 
+
 import com.pedropathing.control.FilteredPIDFCoefficients;
 import com.pedropathing.control.PIDFCoefficients;
 import com.pedropathing.follower.Follower;
@@ -13,9 +14,12 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.pedropathing.geometry.Pose;
 
+
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
+
 public class Constants {
+
 
     public static FollowerConstants followerConstants = new FollowerConstants()
             .mass(14.8)
@@ -40,6 +44,7 @@ public class Constants {
             .rightFrontMotorDirection(DcMotorSimple.Direction.FORWARD)
             .rightRearMotorDirection(DcMotorSimple.Direction.FORWARD);
 
+
     // ─────────────────────────────────────────────────────────────────────
     // PATH CONSTRAINTS
     // Parameters in order:
@@ -58,10 +63,11 @@ public class Constants {
             0.1,                 // translationalConstraint
             Math.toRadians(1.5), // headingConstraint — 1.5 degrees
             50,                  // timeoutConstraint
-            2,                 // brakingStrength
+            2,                   // brakingStrength
             10,                  // BEZIER_CURVE_SEARCH_LIMIT
             1.5                  // brakingStart
     );
+
 
     public static PinpointConstants localizerConstants = new PinpointConstants()
             .forwardPodY(0.02)
@@ -72,6 +78,7 @@ public class Constants {
             .forwardEncoderDirection(GoBildaPinpointDriver.EncoderDirection.FORWARD)
             .strafeEncoderDirection(GoBildaPinpointDriver.EncoderDirection.FORWARD);
 
+
     public static Follower createFollower(HardwareMap hardwareMap) {
         return new FollowerBuilder(followerConstants, hardwareMap)
                 .mecanumDrivetrain(driveConstants)
@@ -80,9 +87,11 @@ public class Constants {
                 .build();
     }
 
+
     // =====================================================
     // ROBOT SUBSYSTEM CONSTANTS
     // =====================================================
+
 
     // ---- Kickstand (CRServo — runs while button held) ----
     public static class Kickstand {
@@ -91,11 +100,13 @@ public class Constants {
         public static final String MOTOR_NAME    = "kickstand";
     }
 
+
     // ---- Gate (Standard Servo) ----
     public static class Gate {
         public static final double OPEN_POSITION  = 0.6;
         public static final double CLOSE_POSITION = 0.0;
     }
+
 
     // ---- Hood (Axon MAX servo — alliance-independent) ----
     // A = CLOSE, X = MEDIUM, Y = TOP, B = FAR
@@ -105,6 +116,7 @@ public class Constants {
         public static final double TOP    = 0.63;
         public static final double FAR    = 0.6;
     }
+
 
     // ---- Flywheel (dual goBILDA 6000 RPM, shared shaft) ----
     // All velocities in RPM — converted to ticks/sec in OpModeBase
@@ -116,11 +128,12 @@ public class Constants {
 
         public static final int STABILIZE_MS      = 300;
 
-        public static final double VELOCITY_IDLE   = 500;
-        public static final double VELOCITY_CLOSE  = 2380;
-        public static final double VELOCITY_MEDIUM = 2500;
-        public static final double VELOCITY_TOP    = 2680;
-        public static final double VELOCITY_FAR    = 3250;
+        public static final double VELOCITY_IDLE    = 500;
+        public static final double VELOCITY_CLOSE   = 2380;
+        public static final double VELOCITY_MEDIUM  = 2500;
+        public static final double VELOCITY_TOP     = 2680;
+        public static final double VELOCITY_FAR     = 3250;
+        public static final double VELOCITY_FAR_TOP = 3280; // far auto — slightly higher than teleop FAR
 
         public static final double FIRE_WINDOW_LOW  = -150.0;
         public static final double FIRE_WINDOW_HIGH =  300.0;
@@ -133,17 +146,18 @@ public class Constants {
         public static final long   SHOOT_DURATION_MS   = 2000;
     }
 
+
     // ---- Snap-to shooting poses ----
     // Mirror formula: X_blue = 144 - X_red, Y_blue = Y_red, Heading_blue = -Heading_red
     public static class SnapPositions {
 
         // ---- RED alliance shooting poses ----
-        public static final Pose RED_CLOSE     = new Pose(108,  115, Math.toRadians(48));
-        public static final Pose RED_MEDIUM    = new Pose(90,    96, Math.toRadians(46));
-        public static final Pose RED_TOP       = new Pose(73,    76, Math.toRadians(48.5));
-        public static final Pose RED_FAR       = new Pose(77.4, 19.2, Math.toRadians(72.2));
-        public static final Pose RED_FAR_START = new Pose(113,    9,  Math.toRadians(0));
-        public static final Pose RED_NEAR_START = new Pose(126.6,    50,  Math.toRadians(45));
+        public static final Pose RED_CLOSE      = new Pose(108,   115, Math.toRadians(48));
+        public static final Pose RED_MEDIUM     = new Pose(90,     96, Math.toRadians(46));
+        public static final Pose RED_TOP        = new Pose(73,     76, Math.toRadians(48.5));
+        public static final Pose RED_FAR        = new Pose(77.4,  19.2, Math.toRadians(72.2));
+        public static final Pose RED_FAR_START  = new Pose(113,    9,  Math.toRadians(0));
+        public static final Pose RED_NEAR_START = new Pose(124,  50,  Math.toRadians(45));
 
         // ---- RED utility poses ----
         public static final Pose RED_HUMAN_PLAYER = new Pose(36,  12, Math.toRadians(180));
@@ -153,20 +167,21 @@ public class Constants {
         public static final Pose RED_RESET_POSE   = new Pose(9.5,  8, Math.toRadians(180));
 
         // ---- BLUE alliance shooting poses ----
-        public static final Pose BLUE_CLOSE     = new Pose(36,  115, Math.toRadians(132));
-        public static final Pose BLUE_MEDIUM    = new Pose(54,   96, Math.toRadians(134));
-        public static final Pose BLUE_TOP       = new Pose(71,   75, Math.toRadians(132));
-        public static final Pose BLUE_FAR       = new Pose(77,  19.2, Math.toRadians(108));
+        public static final Pose BLUE_CLOSE      = new Pose(36,   115, Math.toRadians(132));
+        public static final Pose BLUE_MEDIUM     = new Pose(54,    96, Math.toRadians(134));
+        public static final Pose BLUE_TOP        = new Pose(71,    75, Math.toRadians(132));
+        public static final Pose BLUE_FAR        = new Pose(77,   19.2, Math.toRadians(108));
 
         // ---- BLUE utility poses ----
         public static final Pose BLUE_HUMAN_PLAYER = new Pose(108, 12, Math.toRadians(0));
         public static final Pose BLUE_PARK         = new Pose(107, 32, Math.toRadians(0));
         public static final Pose BLUE_FAR_START    = new Pose(64,   9, Math.toRadians(90));
-        public static final Pose BLUE_NEAR_START    = new Pose(17.4,   50, Math.toRadians(135));
+        public static final Pose BLUE_NEAR_START   = new Pose(21.5, 50, Math.toRadians(135));
 
         // ---- BLUE pose reset — robot backed against near wall ----
-        public static final Pose BLUE_RESET_POSE   = new Pose(31, 9, Math.toRadians(180));
+        public static final Pose BLUE_RESET_POSE   = new Pose(31,  9, Math.toRadians(180));
     }
+
 
     // ---- Intake ----
     public static class Intake {
@@ -174,10 +189,14 @@ public class Constants {
         public static final double REVERSE_POWER =  1.0;
     }
 
+
     // ---- LED (goBILDA RGB — configured as Servo) ----
     public static class LED {
+        public static final double SOLID_RED    = 0.278; // verify on hardware — may need ±0.02 tuning
         public static final double SOLID_GREEN  = 0.500;
         public static final double SOLID_YELLOW = 0.388;
         public static final double OFF          = 0.0;
     }
 }
+
+

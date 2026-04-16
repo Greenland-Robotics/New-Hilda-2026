@@ -1,10 +1,12 @@
 package gcsrobotics.opmode;
 
+
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+
 
 import gcsrobotics.commands.FollowPath;
 import gcsrobotics.commands.ShootCurrent;
@@ -14,31 +16,36 @@ import gcsrobotics.control.AutoBase;
 import gcsrobotics.control.PoseErrorTracker;
 import gcsrobotics.control.PoseStorage;
 import gcsrobotics.pedroPathing.Constants;
+import gcsrobotics.pedroPathing.FieldMirror;
 import gcsrobotics.vertices.CommandRunner;
 import gcsrobotics.vertices.InstantCommand;
 import gcsrobotics.vertices.SeriesCommand;
 import gcsrobotics.vertices.SleepCommand;
 
+
 // ═══════════════════════════════════════════════════════════════════════════
-// redFarNoSpikeAuto — Far Zone Autonomous (Red Alliance, No Spike Mark)
+// BlueFarNoSpikeAuto — Far Zone Autonomous (Blue Alliance, No Spike Mark)
+//
+// Mirrored from redFarNoSpikeAuto via FieldMirror (144 - x, same y, π - heading)
 //
 // FLYWHEEL: runs at VELOCITY_FAR throughout — no idle between cycles
 //
-// SHOOT POSE HEADINGS:
-//   Shot 1 (Preload)  → SHOOT_POSE          67°
-//   Shot 2 (Corner1)  → SHOOT_POSE_RETURN   59°
-//   Shot 3 (Corner2)  → SHOOT_POSE_RETURN_2 63°
-//   Shot 4 (Corner3)  → SHOOT_POSE_RETURN_3 59°
+// SHOOT POSE HEADINGS (mirrored):
+//   Shot 1 (Preload)  → SHOOT_POSE          ~112°
+//   Shot 2 (Corner1)  → SHOOT_POSE_RETURN   ~123°
+//   Shot 3 (Corner2)  → SHOOT_POSE_RETURN_2 ~123°
 //
 // CHASSIS SPEED CHANGES:
-//   CornerCycle (x3):
+//   CornerCycle (x2):
 //     - Approach             → NORMAL_SPEED
 //     - Bump forward/back    → INTAKE_SPEED  (slow)
 //     - Return               → NORMAL_SPEED
 // ═══════════════════════════════════════════════════════════════════════════
 
-@Autonomous(name = "RED FAR AUTO- NO SPIKE")
-public class redFarNoSpikeAuto extends AutoBase {
+
+@Autonomous(name = "-BLUE FAR AUTO- NO SPIKE")
+public class BlueFarNoSpikeAuto extends AutoBase {
+
 
     // ─────────────────────────────────────────────────────────────────────
     // TIMING CONSTANTS
@@ -47,27 +54,31 @@ public class redFarNoSpikeAuto extends AutoBase {
     private static final int STABILIZE_MS  = 200;
     private static final int BUMP_PAUSE_MS = 500;
 
+
     // ─────────────────────────────────────────────────────────────────────
     // DRIVE SPEED CONSTANTS
     // ─────────────────────────────────────────────────────────────────────
     private static final double NORMAL_SPEED = 1.0;
     private static final double INTAKE_SPEED = 0.8;
 
+
     // ─────────────────────────────────────────────────────────────────────
     // START POSE
     // ─────────────────────────────────────────────────────────────────────
-    private static final Pose START_POSE = new Pose(80, 9, Math.toRadians(90));
+    private static final Pose START_POSE = FieldMirror.mirror(new Pose(80, 9, Math.toRadians(90)));
+
 
     // ─────────────────────────────────────────────────────────────────────
-    // SHOOT POSES
+    // SHOOT POSES — mirrored from red
     // ─────────────────────────────────────────────────────────────────────
-    static final Pose SHOOT_POSE          = new Pose(85.000, 14.000, Math.toRadians(68)); // Shot 1 — preload
-    static final Pose SHOOT_POSE_RETURN   = new Pose(87.000, 14.000, Math.toRadians(57)); // Shot 2 — Corner1
-    static final Pose SHOOT_POSE_RETURN_2 = new Pose(88.000, 14.000, Math.toRadians(57)); // Shot 3 — Corner2
-    static final Pose SHOOT_POSE_RETURN_3 = new Pose(85.000, 14.000, Math.toRadians(57)); // Shot 4 — Corner3
+    static final Pose SHOOT_POSE          = FieldMirror.mirror(new Pose(85.000, 14.000, Math.toRadians(68))); // Shot 1 — preload
+    static final Pose SHOOT_POSE_RETURN   = FieldMirror.mirror(new Pose(87.000, 14.000, Math.toRadians(57))); // Shot 2 — Corner1
+    static final Pose SHOOT_POSE_RETURN_2 = FieldMirror.mirror(new Pose(89.000, 14.000, Math.toRadians(57))); // Shot 3 — Corner2
+
 
     Paths paths;
     PoseErrorTracker tracker = new PoseErrorTracker();
+
 
     // ─────────────────────────────────────────────────────────────────────
     // INITIALIZE
@@ -80,6 +91,7 @@ public class redFarNoSpikeAuto extends AutoBase {
         hoodServo.setPosition(Constants.Hood.FAR);
     }
 
+
     // ─────────────────────────────────────────────────────────────────────
     // BUILD COMMANDS
     // ─────────────────────────────────────────────────────────────────────
@@ -88,6 +100,7 @@ public class redFarNoSpikeAuto extends AutoBase {
         commandRunner = new CommandRunner(
                 new SeriesCommand(
 
+
                         // ── STEP 1: Spin up flywheel + set hood
                         new InstantCommand(() -> {
                             setFlywheelVelocity(Constants.Flywheel.VELOCITY_FAR);
@@ -95,26 +108,33 @@ public class redFarNoSpikeAuto extends AutoBase {
                             follower.setMaxPower(NORMAL_SPEED);
                         }),
 
+
                         // ── STEP 2: Drive to shoot pose
                         new FollowPath(paths.PreloadShoot),
 
+
                         // ── STEP 3: Wait for flywheel spinup (first shot only)
                         new SleepCommand(SPINUP_MS),
+
 
                         // ── STEP 4: Shoot preload
                         new ShootCurrent(() -> ShootingPosition.FAR),
                         new InstantCommand(() -> tracker.record("PRELOAD_SHOOT", follower.getPose(), SHOOT_POSE)),
 
+
                         // ── STEP 5: Start intake
                         new StartIntake(),
+
 
                         // ══════════════════════════════════════════════
                         // CORNER CYCLE 1
                         // ══════════════════════════════════════════════
 
+
                         new InstantCommand(() -> follower.setMaxPower(NORMAL_SPEED)),
                         new FollowPath(paths.CornerApproach1),
                         new InstantCommand(() -> tracker.record("CORNER1_APPROACH", follower.getPose(), Paths.CORNER_APPROACH_POSE)),
+
 
                         new InstantCommand(() -> follower.setMaxPower(INTAKE_SPEED)),
                         new FollowPath(paths.CornerBumpBack),
@@ -124,7 +144,9 @@ public class redFarNoSpikeAuto extends AutoBase {
                         new FollowPath(paths.CornerAdjust),
                         new InstantCommand(() -> tracker.record("CORNER1_ADJUST", follower.getPose(), Paths.CORNER_ADJUST_POSE)),
 
+
                         new SleepCommand(BUMP_PAUSE_MS),
+
 
                         new InstantCommand(() -> follower.setMaxPower(NORMAL_SPEED)),
                         new FollowPath(paths.CornerReturn1),
@@ -133,13 +155,16 @@ public class redFarNoSpikeAuto extends AutoBase {
                         new InstantCommand(() -> tracker.record("CORNER1_SHOOT", follower.getPose(), SHOOT_POSE_RETURN)),
                         new StartIntake(),
 
+
                         // ══════════════════════════════════════════════
                         // CORNER CYCLE 2
                         // ══════════════════════════════════════════════
 
+
                         new InstantCommand(() -> follower.setMaxPower(NORMAL_SPEED)),
                         new FollowPath(paths.CornerApproach2),
                         new InstantCommand(() -> tracker.record("CORNER2_APPROACH", follower.getPose(), Paths.CORNER_APPROACH_POSE)),
+
 
                         new InstantCommand(() -> follower.setMaxPower(INTAKE_SPEED)),
                         new FollowPath(paths.CornerBumpBack),
@@ -150,14 +175,16 @@ public class redFarNoSpikeAuto extends AutoBase {
                         new FollowPath(paths.CornerAdjust),
                         new InstantCommand(() -> tracker.record("CORNER2_ADJUST", follower.getPose(), Paths.CORNER_ADJUST_POSE)),
 
+
                         new SleepCommand(BUMP_PAUSE_MS),
+
 
                         new InstantCommand(() -> follower.setMaxPower(NORMAL_SPEED)),
                         new FollowPath(paths.CornerReturn2),
                         new SleepCommand(STABILIZE_MS),
                         new ShootCurrent(() -> ShootingPosition.FAR),
                         new InstantCommand(() -> tracker.record("CORNER2_SHOOT", follower.getPose(), SHOOT_POSE_RETURN_2)),
-                        new StartIntake(),
+
 
                         // ── FINAL: Stop everything + park
                         new InstantCommand(() -> {
@@ -172,6 +199,7 @@ public class redFarNoSpikeAuto extends AutoBase {
                 )
         );
     }
+
 
     // ─────────────────────────────────────────────────────────────────────
     // RUN LOOP
@@ -189,91 +217,92 @@ public class redFarNoSpikeAuto extends AutoBase {
         telemetry.update();
     }
 
+
     // ─────────────────────────────────────────────────────────────────────
     // PATHS
     // ─────────────────────────────────────────────────────────────────────
     static class Paths {
 
-        static final Pose CORNER_APPROACH_POSE  = new Pose(129.000,  8.700, Math.toRadians(0));
-        static final Pose CORNER_BUMP_BACK_POSE = new Pose(126.000,  8.700, Math.toRadians(0));
-        static final Pose CORNER_BUMP_FWD_POSE  = new Pose(130.000,  8.600, Math.toRadians(0));
-        static final Pose CORNER_ADJUST_POSE    = new Pose(122.000, 12.600, Math.toRadians(0));
-        static final Pose PARK_POSE             = new Pose(112.749,  8.708, Math.toRadians(0));
+
+        static final Pose CORNER_APPROACH_POSE  = FieldMirror.mirror(new Pose(129.000,  8.700, Math.toRadians(0)));
+        static final Pose CORNER_BUMP_BACK_POSE = FieldMirror.mirror(new Pose(126.000,  8.700, Math.toRadians(0)));
+        static final Pose CORNER_BUMP_FWD_POSE  = FieldMirror.mirror(new Pose(130.000,  8.600, Math.toRadians(0)));
+        static final Pose CORNER_ADJUST_POSE    = FieldMirror.mirror(new Pose(122.000, 12.600, Math.toRadians(0)));
+        static final Pose PARK_POSE             = FieldMirror.mirror(new Pose(112.749,  8.708, Math.toRadians(0)));
+
 
         public PathChain PreloadShoot;
         public PathChain CornerApproach1;
         public PathChain CornerApproach2;
-        public PathChain CornerApproach3;
         public PathChain CornerBumpBack;
         public PathChain CornerBumpForward;
         public PathChain CornerAdjust;
         public PathChain CornerReturn1;
         public PathChain CornerReturn2;
-        public PathChain CornerReturn3;
         public PathChain Park;
 
+
         public Paths(Follower follower) {
+
 
             PreloadShoot = follower.pathBuilder()
                     .addPath(new BezierLine(START_POSE, SHOOT_POSE))
                     .setLinearHeadingInterpolation(START_POSE.getHeading(), SHOOT_POSE.getHeading())
                     .build();
 
-            // ── Corner Cycle 1 — departs SHOOT_POSE (67°) ──
+
+            // ── Corner Cycle 1 — departs SHOOT_POSE ──
             CornerApproach1 = follower.pathBuilder()
                     .addPath(new BezierLine(SHOOT_POSE, CORNER_APPROACH_POSE))
                     .setLinearHeadingInterpolation(SHOOT_POSE.getHeading(), CORNER_APPROACH_POSE.getHeading())
                     .build();
 
+
             CornerBumpBack = follower.pathBuilder()
                     .addPath(new BezierLine(CORNER_APPROACH_POSE, CORNER_BUMP_BACK_POSE))
-                    .setConstantHeadingInterpolation(Math.toRadians(0))
+                    .setConstantHeadingInterpolation(Math.PI)
                     .build();
+
 
             CornerBumpForward = follower.pathBuilder()
                     .addPath(new BezierLine(CORNER_BUMP_BACK_POSE, CORNER_BUMP_FWD_POSE))
-                    .setConstantHeadingInterpolation(Math.toRadians(0))
+                    .setConstantHeadingInterpolation(Math.PI)
                     .build();
+
 
             CornerAdjust = follower.pathBuilder()
                     .addPath(new BezierLine(CORNER_BUMP_FWD_POSE, CORNER_ADJUST_POSE))
-                    .setConstantHeadingInterpolation(Math.toRadians(0))
+                    .setConstantHeadingInterpolation(Math.PI)
                     .build();
+
 
             CornerReturn1 = follower.pathBuilder()
                     .addPath(new BezierLine(CORNER_ADJUST_POSE, SHOOT_POSE_RETURN))
                     .setLinearHeadingInterpolation(CORNER_ADJUST_POSE.getHeading(), SHOOT_POSE_RETURN.getHeading())
                     .build();
 
-            // ── Corner Cycle 2 — departs SHOOT_POSE_RETURN (59°) ──
+
+            // ── Corner Cycle 2 — departs SHOOT_POSE_RETURN ──
             CornerApproach2 = follower.pathBuilder()
                     .addPath(new BezierLine(SHOOT_POSE_RETURN, CORNER_APPROACH_POSE))
                     .setLinearHeadingInterpolation(SHOOT_POSE_RETURN.getHeading(), CORNER_APPROACH_POSE.getHeading())
                     .build();
+
 
             CornerReturn2 = follower.pathBuilder()
                     .addPath(new BezierLine(CORNER_ADJUST_POSE, SHOOT_POSE_RETURN_2))
                     .setLinearHeadingInterpolation(CORNER_ADJUST_POSE.getHeading(), SHOOT_POSE_RETURN_2.getHeading())
                     .build();
 
-            // ── Corner Cycle 3 — departs SHOOT_POSE_RETURN_2 (63°) ──
-            CornerApproach3 = follower.pathBuilder()
-                    .addPath(new BezierLine(SHOOT_POSE_RETURN_2, CORNER_APPROACH_POSE))
-                    .setLinearHeadingInterpolation(SHOOT_POSE_RETURN_2.getHeading(), CORNER_APPROACH_POSE.getHeading())
-                    .build();
 
-            CornerReturn3 = follower.pathBuilder()
-                    .addPath(new BezierLine(CORNER_ADJUST_POSE, SHOOT_POSE_RETURN_3))
-                    .setLinearHeadingInterpolation(CORNER_ADJUST_POSE.getHeading(), SHOOT_POSE_RETURN_3.getHeading())
-                    .build();
-
-            // ── Park — departs SHOOT_POSE_RETURN_3 (59°) ──
+            // ── Park — departs SHOOT_POSE_RETURN_2 ──
             Park = follower.pathBuilder()
-                    .addPath(new BezierLine(SHOOT_POSE_RETURN_3, PARK_POSE))
-                    .setLinearHeadingInterpolation(SHOOT_POSE_RETURN_3.getHeading(), PARK_POSE.getHeading())
+                    .addPath(new BezierLine(SHOOT_POSE_RETURN_2, PARK_POSE))
+                    .setLinearHeadingInterpolation(SHOOT_POSE_RETURN_2.getHeading(), PARK_POSE.getHeading())
                     .build();
         }
     }
 }
+
 
 

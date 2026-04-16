@@ -14,6 +14,7 @@ import gcsrobotics.commands.StartIntake;
 import gcsrobotics.control.AutoBase;
 import gcsrobotics.control.PoseErrorTracker;
 import gcsrobotics.pedroPathing.Constants;
+import gcsrobotics.pedroPathing.FieldMirror;
 import gcsrobotics.vertices.CommandRunner;
 import gcsrobotics.vertices.InstantCommand;
 import gcsrobotics.vertices.ParallelCommand;
@@ -21,30 +22,23 @@ import gcsrobotics.vertices.SeriesCommand;
 import gcsrobotics.vertices.SleepCommand;
 
 // ═══════════════════════════════════════════════════════════════════════════
-// RedNearAutoGate — Near Zone Autonomous (Red Alliance)
+// BlueNearAutoGate — Near Zone Autonomous (Blue Alliance)
 //
+// Mirrored from RedNearNoGateAuto via FieldMirror (144 - x, same y, π - heading)
 // holdEnd = true on all return-to-shoot paths for active endpoint correction
-//
-// SHOOT POSE HEADINGS:
-//   Shot 1 (Preload)       → SHOOT_POSE          40°
-//   Shot 2 (Spike return)  → SHOOT_POSE_RETURN   38° (−2°)
-//   Shot 3 (Collect2 ret.) → SHOOT_POSE_RETURN_2 36° (−4°)
 // ═══════════════════════════════════════════════════════════════════════════
 
-@Autonomous(name = "RED NEAR AUTO- OPEN GATE", group = "Hilda Auto")
-public class RedNearAutoGate extends AutoBase {
+@Autonomous(name = "-BLUE NEAR AUTO- OPEN GATE", group = "Hilda Auto")
+public class BlueNearAutoGate extends AutoBase {
 
     private static final int SETTLE_MS = 300;
 
     private static final double NORMAL_SPEED = 1.0;
     private static final double INTAKE_SPEED = 0.65;
 
-    private static final Pose START_POSE = new Pose(123, 116, Math.toRadians(37));
+    private static final Pose START_POSE = FieldMirror.mirror(new Pose(123, 116, Math.toRadians(37)));
 
-    // ── Shoot poses — same x/y, headings decreasing by 2° each shot ──
-    static final Pose SHOOT_POSE          = new Pose(90.000, 96.000, Math.toRadians(40)); // Shot 1 — preload
-    static final Pose SHOOT_POSE_RETURN   = new Pose(90.000, 96.000, Math.toRadians(36)); // Shot 2 — spike return
-    static final Pose SHOOT_POSE_RETURN_2 = new Pose(90.000, 96.000, Math.toRadians(36)); // Shot 3 — collect2 return
+    static final Pose SHOOT_POSE = FieldMirror.mirror(new Pose(90.000, 96.000, Math.toRadians(36)));
 
     Paths paths;
     PoseErrorTracker tracker = new PoseErrorTracker();
@@ -71,7 +65,6 @@ public class RedNearAutoGate extends AutoBase {
                                     hoodServo.setPosition(Constants.Hood.MEDIUM);
                                     follower.setMaxPower(NORMAL_SPEED);
                                 }),
-                                // holdEnd = true — hold at shoot pose during settle
                                 new FollowPath(paths.Preloadshoot, true)
                         ),
                         new SleepCommand(SETTLE_MS),
@@ -100,9 +93,8 @@ public class RedNearAutoGate extends AutoBase {
                             setFlywheelVelocity(Constants.Flywheel.VELOCITY_MEDIUM);
                             hoodServo.setPosition(Constants.Hood.MEDIUM);
                         }),
-                        // holdEnd = true — hold at shoot pose during settle + shoot
                         new FollowPath(paths.SpikeReturnShoot, true),
-                        new InstantCommand(() -> tracker.record("SPIKE_RETURN_SHOOT", follower.getPose(), SHOOT_POSE_RETURN)),
+                        new InstantCommand(() -> tracker.record("SPIKE_RETURN_SHOOT", follower.getPose(), SHOOT_POSE)),
 
                         new InstantCommand(() -> intakeMotor.setPower(0)),
                         new SleepCommand(SETTLE_MS),
@@ -131,9 +123,8 @@ public class RedNearAutoGate extends AutoBase {
                             setFlywheelVelocity(Constants.Flywheel.VELOCITY_MEDIUM);
                             hoodServo.setPosition(Constants.Hood.MEDIUM);
                         }),
-                        // holdEnd = true — hold at shoot pose during settle + shoot
                         new FollowPath(paths.Collect2ReturnShoot, true),
-                        new InstantCommand(() -> tracker.record("COLLECT2_RETURN_SHOOT", follower.getPose(), SHOOT_POSE_RETURN_2)),
+                        new InstantCommand(() -> tracker.record("COLLECT2_RETURN_SHOOT", follower.getPose(), SHOOT_POSE)),
 
                         new InstantCommand(() -> intakeMotor.setPower(0)),
                         new SleepCommand(SETTLE_MS),
@@ -169,12 +160,12 @@ public class RedNearAutoGate extends AutoBase {
 
     public static class Paths {
 
-        static final Pose SPIKE_APPROACH_POSE    = new Pose(100.983, 80.5, Math.toRadians(0));
-        static final Pose SPIKE_SWEEP_POSE       = new Pose(125.000, 80.5, Math.toRadians(0));
-        static final Pose SPIKE_COLLECT_END_POSE = new Pose(126.571, 71, Math.toRadians(0));
-        static final Pose COLLECT2_OUT_POSE      = new Pose(102.740, 57, Math.toRadians(0));
-        static final Pose COLLECT2_END_POSE      = new Pose(130.817, 57, Math.toRadians(0));
-        static final Pose PARK_POSE              = new Pose(124, 50, Math.toRadians(45));
+        static final Pose SPIKE_APPROACH_POSE    = FieldMirror.mirror(new Pose(98, 79,  Math.toRadians(0)));
+        static final Pose SPIKE_SWEEP_POSE       = FieldMirror.mirror(new Pose(123, 79,  Math.toRadians(0)));
+        static final Pose SPIKE_COLLECT_END_POSE = FieldMirror.mirror(new Pose(123, 71,    Math.toRadians(0)));
+        static final Pose COLLECT2_OUT_POSE      = FieldMirror.mirror(new Pose(96, 56,    Math.toRadians(0)));
+        static final Pose COLLECT2_END_POSE      = FieldMirror.mirror(new Pose(123, 56,    Math.toRadians(0)));
+        static final Pose PARK_POSE              = FieldMirror.mirror(new Pose(124,     50,    Math.toRadians(45)));
 
         public PathChain Preloadshoot;
         public PathChain SpikeApproach;
@@ -197,7 +188,7 @@ public class RedNearAutoGate extends AutoBase {
             SpikeApproach = follower.pathBuilder()
                     .addPath(new BezierCurve(
                             SHOOT_POSE,
-                            new Pose(93.872, 79.306),
+                            FieldMirror.mirror(new Pose(93.872, 79.306)),
                             SPIKE_APPROACH_POSE))
                     .setLinearHeadingInterpolation(SHOOT_POSE.getHeading(), SPIKE_APPROACH_POSE.getHeading())
                     .build();
@@ -207,32 +198,33 @@ public class RedNearAutoGate extends AutoBase {
                     .setLinearHeadingInterpolation(SPIKE_APPROACH_POSE.getHeading(), SPIKE_SWEEP_POSE.getHeading())
                     .build();
 
+            // ── Added: mirrored SpikeCollectEnd ──
             SpikeCollectEnd = follower.pathBuilder()
                     .addPath(new BezierCurve(
                             SPIKE_SWEEP_POSE,
-                            new Pose(111.524, 71.990),
+                            FieldMirror.mirror(new Pose(111.524, 71.990)),
                             SPIKE_COLLECT_END_POSE))
                     .setLinearHeadingInterpolation(SPIKE_SWEEP_POSE.getHeading(), SPIKE_COLLECT_END_POSE.getHeading())
                     .build();
 
-            // SpikeReturnShoot → SHOOT_POSE_RETURN (38°)
             SpikeReturnShoot = follower.pathBuilder()
-                    .addPath(new BezierLine(SPIKE_COLLECT_END_POSE, SHOOT_POSE_RETURN))
-                    .setLinearHeadingInterpolation(SPIKE_COLLECT_END_POSE.getHeading(), SHOOT_POSE_RETURN.getHeading())
+                    .addPath(new BezierLine(SPIKE_COLLECT_END_POSE, SHOOT_POSE))
+                    .setLinearHeadingInterpolation(SPIKE_COLLECT_END_POSE.getHeading(), SHOOT_POSE.getHeading())
                     .build();
 
             Collect2Out = follower.pathBuilder()
                     .addPath(new BezierCurve(
-                            SHOOT_POSE_RETURN,
-                            new Pose(94.092, 56.996),
+                            SHOOT_POSE,
+                            FieldMirror.mirror(new Pose(94.092, 56.996)),
                             COLLECT2_OUT_POSE))
-                    .setLinearHeadingInterpolation(SHOOT_POSE_RETURN.getHeading(), COLLECT2_OUT_POSE.getHeading())
+                    .setLinearHeadingInterpolation(SHOOT_POSE.getHeading(), COLLECT2_OUT_POSE.getHeading())
                     .build();
 
+            // ── replicated as-is from red (starts from SHOOT_POSE, not COLLECT2_OUT_POSE) ──
             Collect2Sweep = follower.pathBuilder()
                     .addPath(new BezierCurve(
-                            SHOOT_POSE_RETURN,
-                            new Pose(94.092, 56.996),
+                            SHOOT_POSE,
+                            FieldMirror.mirror(new Pose(94.092, 56.996)),
                             COLLECT2_OUT_POSE))
                     .setLinearHeadingInterpolation(COLLECT2_OUT_POSE.getHeading(), COLLECT2_OUT_POSE.getHeading())
                     .build();
@@ -242,21 +234,20 @@ public class RedNearAutoGate extends AutoBase {
                     .setTangentHeadingInterpolation()
                     .build();
 
-            // Collect2ReturnShoot → SHOOT_POSE_RETURN_2 (36°)
             Collect2ReturnShoot = follower.pathBuilder()
                     .addPath(new BezierCurve(
                             COLLECT2_END_POSE,
-                            new Pose(110.729, 43.027),
-                            SHOOT_POSE_RETURN_2))
-                    .setLinearHeadingInterpolation(COLLECT2_END_POSE.getHeading(), SHOOT_POSE_RETURN_2.getHeading())
+                            FieldMirror.mirror(new Pose(110.729, 43.027)),
+                            SHOOT_POSE))
+                    .setLinearHeadingInterpolation(COLLECT2_END_POSE.getHeading(), SHOOT_POSE.getHeading())
                     .build();
 
             Park = follower.pathBuilder()
                     .addPath(new BezierCurve(
-                            SHOOT_POSE_RETURN_2,
-                            new Pose(121.990, 50.242),
+                            SHOOT_POSE,
+                            FieldMirror.mirror(new Pose(121.990, 50.242)),
                             PARK_POSE))
-                    .setLinearHeadingInterpolation(SHOOT_POSE_RETURN_2.getHeading(), PARK_POSE.getHeading())
+                    .setLinearHeadingInterpolation(SHOOT_POSE.getHeading(), PARK_POSE.getHeading())
                     .build();
         }
     }

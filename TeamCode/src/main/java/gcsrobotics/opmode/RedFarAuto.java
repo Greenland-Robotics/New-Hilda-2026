@@ -47,7 +47,7 @@ import gcsrobotics.vertices.SleepCommand;
 // ═══════════════════════════════════════════════════════════════════════════
 
 
-@Autonomous(name = "RedFarAuto")
+@Autonomous(name = "-RED FAR AUTO-SPIKE COLLECT")
 public class RedFarAuto extends AutoBase {
 
     // ─────────────────────────────────────────────────────────────────────
@@ -74,9 +74,9 @@ public class RedFarAuto extends AutoBase {
     // SHOOT POSES — heading adjustments per field test results
     // ─────────────────────────────────────────────────────────────────────
     static final Pose SHOOT_POSE          = new Pose(85.000, 14.000, Math.toRadians(67)); // Shot 1 — preload (2° LEFT)
-    static final Pose SHOOT_POSE_RETURN   = new Pose(85.000, 14.000, Math.toRadians(57)); // Shot 2 — Corner1 (2° RIGHT)
+    static final Pose SHOOT_POSE_RETURN   = new Pose(87.000, 14.000, Math.toRadians(59)); // Shot 2 — Corner1 (2° RIGHT)
     static final Pose SHOOT_POSE_RETURN_2 = new Pose(85.000, 14.000, Math.toRadians(63)); // Shot 3 — Spike (NO CHANGE)
-    static final Pose SHOOT_POSE_RETURN_3 = new Pose(85.000, 14.000, Math.toRadians(59)); // Shot 4 — Corner2 (2° RIGHT)
+    static final Pose SHOOT_POSE_RETURN_3 = new Pose(88.000, 14.000, Math.toRadians(59)); // Shot 4 — Corner2 (2° RIGHT)
 
     Paths paths;
     PoseErrorTracker tracker = new PoseErrorTracker();

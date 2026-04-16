@@ -48,7 +48,7 @@ import gcsrobotics.vertices.SleepCommand;
 // holdEnd = true on all return-to-shoot paths for active endpoint correction
 // ═══════════════════════════════════════════════════════════════════════════
 
-    @Autonomous(name = "RedNearAutoGate", group = "Hilda Auto")
+    @Autonomous(name = "RED NEAR AUTO- NO GATE", group = "Hilda Auto")
     public class RedNearNoGateAuto extends AutoBase {
 
         private static final int SETTLE_MS = 300;
@@ -59,7 +59,7 @@ import gcsrobotics.vertices.SleepCommand;
         private static final Pose START_POSE = new Pose(123, 116, Math.toRadians(37));
 
         // SHOOT_POSE heading nudged to 45° to reduce heading overshoot
-        static final Pose SHOOT_POSE = new Pose(90.000, 96.000, Math.toRadians(40));
+        static final Pose SHOOT_POSE = new Pose(90.000, 96.000, Math.toRadians(36));
 
         gcsrobotics.opmode.RedNearAutoGate.Paths paths;
         PoseErrorTracker tracker = new PoseErrorTracker();
@@ -187,7 +187,7 @@ import gcsrobotics.vertices.SleepCommand;
             static final Pose SPIKE_COLLECT_END_POSE = new Pose(126.571, 71, Math.toRadians(0));
             static final Pose COLLECT2_OUT_POSE      = new Pose(102.740, 57, Math.toRadians(0));
             static final Pose COLLECT2_END_POSE      = new Pose(130.817, 57, Math.toRadians(0));
-            static final Pose PARK_POSE              = new Pose(126.605, 50, Math.toRadians(45));
+            static final Pose PARK_POSE              = new Pose(124, 50, Math.toRadians(45));
 
             public PathChain Preloadshoot;
             public PathChain SpikeApproach;

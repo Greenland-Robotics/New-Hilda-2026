@@ -18,7 +18,7 @@ import gcsrobotics.vertices.InstantCommand;
 import gcsrobotics.vertices.ParallelCommand;
 import gcsrobotics.vertices.SeriesCommand;
 
-@TeleOp(name = "BLUE FAR TeleOp — NH Premier", group = "Hilda")
+@TeleOp(name = "-BLUE FAR TELEOP", group = "Hilda")
 public class BlueTeleopGearmo extends TeleOpBase {
 
     // ============================================================
@@ -195,10 +195,9 @@ public class BlueTeleopGearmo extends TeleOpBase {
 
         resetPose = new ButtonAction(
                 () -> new InstantCommand(() ->
-                        follower.setPose(Constants.SnapPositions.BLUE_RESET_POSE)),
+                        follower.setStartingPose(Constants.SnapPositions.BLUE_RESET_POSE)),
                 commandRunner
         );
-
 
         hoodClose = new ButtonAction(
                 () -> new SeriesCommand(
@@ -272,14 +271,9 @@ public class BlueTeleopGearmo extends TeleOpBase {
         }
 
         // =====================================================
-        // LED INDICATOR — Artifact detection
+        // LED INDICATOR — Ball count (1=red, 2=yellow, 3=green)
         // =====================================================
-        boolean objectDetected = isBallAtTransfer();
-        if (objectDetected) {
-            ledLight.setPosition(Constants.LED.SOLID_GREEN);
-        } else {
-            ledLight.setPosition(Constants.LED.OFF);
-        }
+        updateLED();
 
         // =====================================================
         // GAMEPAD 1 — DRIVER
@@ -365,7 +359,7 @@ public class BlueTeleopGearmo extends TeleOpBase {
         // =====================================================
         // TELEMETRY
         // =====================================================
-        telemetry.addData("Artifact Detected", objectDetected ? "YES" : "NO");
+        telemetry.addData("Ball Count",        getBallCount());
         telemetry.addData("Shot Pose",         currentPosition);
         telemetry.addData("Target RPM",        currentPosition.targetVelocity + rpmOffset);
         telemetry.addData("RPM Offset",        rpmOffset);
