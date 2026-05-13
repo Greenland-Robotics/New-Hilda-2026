@@ -37,7 +37,7 @@ import gcsrobotics.vertices.SleepCommand;
 //     - Return               → NORMAL_SPEED
 // ═══════════════════════════════════════════════════════════════════════════
 
-@Autonomous(name = "RED FAR AUTO- NO SPIKE")
+@Autonomous(name = "1RED FAR AUTO- NO SPIKE")
 public class redFarNoSpikeAuto extends AutoBase {
 
     // ─────────────────────────────────────────────────────────────────────

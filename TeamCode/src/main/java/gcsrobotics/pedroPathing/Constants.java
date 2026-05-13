@@ -109,19 +109,25 @@ public class Constants {
 
 
     // ---- Hood (Axon MAX servo — alliance-independent) ----
-    // A = CLOSE, X = MEDIUM, Y = TOP, B = FAR
+    // Original constants — used by existing autonomous code
     public static class Hood {
         public static final double CLOSE  = 1.0;
         public static final double MEDIUM = 0.67;
         public static final double TOP    = 0.63;
         public static final double FAR    = 0.6;
+
+        // New demo constants — A = FOULSHOT, X = THREEPOINT, Y = LONGSHOT, B = HALFCOURT
+        public static final double FOULSHOT   = 0.0;  // TODO: tune value
+        public static final double THREEPOINT = 0.0;  // TODO: tune value
+        public static final double LONGSHOT   = 0.0;  // TODO: tune value
+        public static final double HALFCOURT  = 0.0;  // TODO: tune value
     }
 
 
     // ---- Flywheel (dual goBILDA 6000 RPM, shared shaft) ----
     // All velocities in RPM — converted to ticks/sec in OpModeBase
     public static class Flywheel {
-        public static final double PIDF_F = 15.5;
+        public static final double PIDF_F = 17.5;
         public static final double PIDF_P = 3.82;
         public static final double PIDF_I = 0.0;
         public static final double PIDF_D = 0.0;
@@ -129,11 +135,19 @@ public class Constants {
         public static final int STABILIZE_MS      = 300;
 
         public static final double VELOCITY_IDLE    = 500;
+
+        // Original constants — used by existing autonomous code
         public static final double VELOCITY_CLOSE   = 2380;
         public static final double VELOCITY_MEDIUM  = 2500;
         public static final double VELOCITY_TOP     = 2680;
-        public static final double VELOCITY_FAR     = 3250;
+        public static final double VELOCITY_FAR     = 3160;
         public static final double VELOCITY_FAR_TOP = 3280; // far auto — slightly higher than teleop FAR
+
+        // New demo constants
+        public static final double VELOCITY_FOULSHOT   = 0.0;  // TODO: tune RPM value
+        public static final double VELOCITY_THREEPOINT = 0.0;  // TODO: tune RPM value
+        public static final double VELOCITY_LONGSHOT   = 0.0;  // TODO: tune RPM value
+        public static final double VELOCITY_HALFCOURT  = 0.0;  // TODO: tune RPM value
 
         public static final double FIRE_WINDOW_LOW  = -150.0;
         public static final double FIRE_WINDOW_HIGH =  300.0;
@@ -151,34 +165,44 @@ public class Constants {
     // Mirror formula: X_blue = 144 - X_red, Y_blue = Y_red, Heading_blue = -Heading_red
     public static class SnapPositions {
 
-        // ---- RED alliance shooting poses ----
+        // ---- RED alliance shooting poses (ORIGINAL) ----
         public static final Pose RED_CLOSE      = new Pose(108,   115, Math.toRadians(48));
         public static final Pose RED_MEDIUM     = new Pose(90,     96, Math.toRadians(46));
         public static final Pose RED_TOP        = new Pose(73,     76, Math.toRadians(48.5));
         public static final Pose RED_FAR        = new Pose(77.4,  19.2, Math.toRadians(72.2));
-        public static final Pose RED_FAR_START  = new Pose(113,    9,  Math.toRadians(0));
-        public static final Pose RED_NEAR_START = new Pose(124,  50,  Math.toRadians(45));
 
-        // ---- RED utility poses ----
+        // ---- RED alliance shooting poses (NEW DEMO) ----
+        public static final Pose RED_FOULSHOT   = new Pose(0, 0, Math.toRadians(0));  // TODO: tune position
+        public static final Pose RED_THREEPOINT = new Pose(0, 0, Math.toRadians(0));  // TODO: tune position
+        public static final Pose RED_LONGSHOT   = new Pose(0, 0, Math.toRadians(0));  // TODO: tune position
+        public static final Pose RED_HALFCOURT  = new Pose(0, 0, Math.toRadians(0));  // TODO: tune position
+
+        // ---- RED start and utility poses ----
+        public static final Pose RED_FAR_START  = new Pose(113,    9,  Math.toRadians(0));
+        public static final Pose Red_FAR_START_DEMO = new Pose(80, 9, Math.toRadians(90));
+        public static final Pose RED_NEAR_START = new Pose(124,  50,  Math.toRadians(45));
         public static final Pose RED_HUMAN_PLAYER = new Pose(36,  12, Math.toRadians(180));
         public static final Pose RED_PARK         = new Pose(37,  32, Math.toRadians(180));
-
-        // ---- RED pose reset — robot backed against near wall ----
         public static final Pose RED_RESET_POSE   = new Pose(9.5,  8, Math.toRadians(180));
 
-        // ---- BLUE alliance shooting poses ----
+        // ---- BLUE alliance shooting poses (ORIGINAL) ----
         public static final Pose BLUE_CLOSE      = new Pose(36,   115, Math.toRadians(132));
         public static final Pose BLUE_MEDIUM     = new Pose(54,    96, Math.toRadians(134));
         public static final Pose BLUE_TOP        = new Pose(71,    75, Math.toRadians(132));
         public static final Pose BLUE_FAR        = new Pose(77,   19.2, Math.toRadians(108));
 
-        // ---- BLUE utility poses ----
-        public static final Pose BLUE_HUMAN_PLAYER = new Pose(108, 12, Math.toRadians(0));
-        public static final Pose BLUE_PARK         = new Pose(107, 32, Math.toRadians(0));
-        public static final Pose BLUE_FAR_START    = new Pose(64,   9, Math.toRadians(90));
-        public static final Pose BLUE_NEAR_START   = new Pose(21.5, 50, Math.toRadians(135));
+        // ---- BLUE alliance shooting poses (NEW DEMO) ----
+        public static final Pose BLUE_FOULSHOT   = new Pose(0, 0, Math.toRadians(0));  // TODO: tune position
+        public static final Pose BLUE_THREEPOINT = new Pose(0, 0, Math.toRadians(0));  // TODO: tune position
+        public static final Pose BLUE_LONGSHOT   = new Pose(0, 0, Math.toRadians(0));  // TODO: tune position
+        public static final Pose BLUE_HALFCOURT  = new Pose(0, 0, Math.toRadians(0));  // TODO: tune position
 
-        // ---- BLUE pose reset — robot backed against near wall ----
+        // ---- BLUE start and utility poses ----
+        public static final Pose BLUE_HUMAN_PLAYER = new Pose(108, 12, Math.toRadians(0));
+        public static final Pose BLUE_PARK         = new Pose(107, 32, Math.toRadians(180));
+        public static final Pose BLUE_FAR_START    = new Pose(31.3,   8.7, Math.toRadians(180));
+        public static final Pose BLUE_FAR_START_DEMO = new Pose(80, 9, Math.toRadians(90));
+        public static final Pose BLUE_NEAR_START   = new Pose(20, 50, Math.toRadians(135));
         public static final Pose BLUE_RESET_POSE   = new Pose(31,  9, Math.toRadians(180));
     }
 
@@ -194,9 +218,7 @@ public class Constants {
     public static class LED {
         public static final double SOLID_RED    = 0.278; // verify on hardware — may need ±0.02 tuning
         public static final double SOLID_GREEN  = 0.500;
-        public static final double SOLID_YELLOW = 0.388;
+        public static final double SOLID_PURPLE = 0.31;
         public static final double OFF          = 0.0;
     }
 }
-
-

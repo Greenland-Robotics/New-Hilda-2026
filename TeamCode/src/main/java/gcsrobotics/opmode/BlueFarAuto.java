@@ -45,7 +45,7 @@ import gcsrobotics.vertices.SleepCommand;
 //     - Return               → NORMAL_SPEED
 // ═══════════════════════════════════════════════════════════════════════════
 
-@Autonomous(name = "-BLUE FAR AUTO- SPIKE COLLECT")
+@Autonomous(name = "2BLUE FAR AUTO SPIKE COLLECT")
 public class BlueFarAuto extends AutoBase {
 
     // ─────────────────────────────────────────────────────────────────────

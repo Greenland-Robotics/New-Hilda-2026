@@ -25,14 +25,17 @@ import gcsrobotics.vertices.SleepCommand;
 
 
 // ═══════════════════════════════════════════════════════════════════════════
-// BlueNearAutoGate — Near Zone Autonomous (Blue Alliance)
+// BlueNearAutoNoGate — Near Zone Autonomous (Blue Alliance)
 //
 // Mirrored from RedNearNoGateAuto via FieldMirror (144 - x, same y, π - heading)
 // holdEnd = true on all return-to-shoot paths for active endpoint correction
+//
+// FIX: Collect2Sweep corrected to start from COLLECT2_OUT_POSE and sweep
+//      to COLLECT2_END_POSE. Collect2End path removed as redundant.
 // ═══════════════════════════════════════════════════════════════════════════
 
 
-@Autonomous(name = "-BLUE NEAR AUTO- NO GATE", group = "Hilda Auto")
+@Autonomous(name = "2BLUE NEAR AUTO NO GATE")
 public class BlueNearAutoNoGate extends AutoBase {
 
 
@@ -133,15 +136,11 @@ public class BlueNearAutoNoGate extends AutoBase {
 
                         new InstantCommand(() -> follower.setMaxPower(INTAKE_SPEED)),
                         new FollowPath(paths.Collect2Sweep),
-                        new InstantCommand(() -> tracker.record("COLLECT2_SWEEP", follower.getPose(), Paths.COLLECT2_OUT_POSE)),
-
-
-                        new InstantCommand(() -> follower.setMaxPower(NORMAL_SPEED)),
-                        new FollowPath(paths.Collect2End),
-                        new InstantCommand(() -> tracker.record("COLLECT2_END", follower.getPose(), Paths.COLLECT2_END_POSE)),
+                        new InstantCommand(() -> tracker.record("COLLECT2_SWEEP", follower.getPose(), Paths.COLLECT2_END_POSE)),
 
 
                         new InstantCommand(() -> {
+                            follower.setMaxPower(NORMAL_SPEED);
                             setFlywheelVelocity(Constants.Flywheel.VELOCITY_MEDIUM);
                             hoodServo.setPosition(Constants.Hood.MEDIUM);
                         }),
@@ -187,12 +186,12 @@ public class BlueNearAutoNoGate extends AutoBase {
     public static class Paths {
 
 
-        static final Pose SPIKE_APPROACH_POSE    = FieldMirror.mirror(new Pose(98, 79,  Math.toRadians(0)));
-        static final Pose SPIKE_SWEEP_POSE       = FieldMirror.mirror(new Pose(123, 79,  Math.toRadians(0)));
-        static final Pose SPIKE_COLLECT_END_POSE = FieldMirror.mirror(new Pose(122, 79.5,    Math.toRadians(0)));
-        static final Pose COLLECT2_OUT_POSE      = FieldMirror.mirror(new Pose(96, 56,    Math.toRadians(0)));
-        static final Pose COLLECT2_END_POSE      = FieldMirror.mirror(new Pose(123, 56,    Math.toRadians(0)));
-        static final Pose PARK_POSE              = FieldMirror.mirror(new Pose(124,     50,    Math.toRadians(45)));
+        static final Pose SPIKE_APPROACH_POSE    = FieldMirror.mirror(new Pose(96,  79, Math.toRadians(0)));
+        static final Pose SPIKE_SWEEP_POSE       = FieldMirror.mirror(new Pose(123, 79, Math.toRadians(0)));
+        static final Pose SPIKE_COLLECT_END_POSE = FieldMirror.mirror(new Pose(123, 67, Math.toRadians(0)));
+        static final Pose COLLECT2_OUT_POSE      = FieldMirror.mirror(new Pose(94,  58, Math.toRadians(0)));
+        static final Pose COLLECT2_END_POSE      = FieldMirror.mirror(new Pose(123, 56, Math.toRadians(0)));
+        static final Pose PARK_POSE              = FieldMirror.mirror(new Pose(124, 50, Math.toRadians(45)));
 
 
         public PathChain Preloadshoot;
@@ -202,7 +201,6 @@ public class BlueNearAutoNoGate extends AutoBase {
         public PathChain SpikeReturnShoot;
         public PathChain Collect2Out;
         public PathChain Collect2Sweep;
-        public PathChain Collect2End;
         public PathChain Collect2ReturnShoot;
         public PathChain Park;
 
@@ -246,19 +244,10 @@ public class BlueNearAutoNoGate extends AutoBase {
                     .build();
 
 
-            // ── replicated as-is from red (starts from SHOOT_POSE, not COLLECT2_OUT_POSE) ──
+            // ── FIXED: starts from COLLECT2_OUT_POSE, sweeps to COLLECT2_END_POSE ──
             Collect2Sweep = follower.pathBuilder()
-                    .addPath(new BezierCurve(
-                            SHOOT_POSE,
-                            FieldMirror.mirror(new Pose(94.092, 56.996)),
-                            COLLECT2_OUT_POSE))
-                    .setLinearHeadingInterpolation(COLLECT2_OUT_POSE.getHeading(), COLLECT2_OUT_POSE.getHeading())
-                    .build();
-
-
-            Collect2End = follower.pathBuilder()
                     .addPath(new BezierLine(COLLECT2_OUT_POSE, COLLECT2_END_POSE))
-                    .setTangentHeadingInterpolation()
+                    .setLinearHeadingInterpolation(COLLECT2_OUT_POSE.getHeading(), COLLECT2_END_POSE.getHeading())
                     .build();
 
 
@@ -281,6 +270,3 @@ public class BlueNearAutoNoGate extends AutoBase {
         }
     }
 }
-
-
-

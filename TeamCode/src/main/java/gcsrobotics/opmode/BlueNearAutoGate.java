@@ -26,9 +26,12 @@ import gcsrobotics.vertices.SleepCommand;
 //
 // Mirrored from RedNearNoGateAuto via FieldMirror (144 - x, same y, π - heading)
 // holdEnd = true on all return-to-shoot paths for active endpoint correction
+//
+// FIX: Collect2Sweep corrected to start from COLLECT2_OUT_POSE and sweep
+//      to COLLECT2_END_POSE. Collect2End path removed as redundant.
 // ═══════════════════════════════════════════════════════════════════════════
 
-@Autonomous(name = "-BLUE NEAR AUTO- OPEN GATE", group = "Hilda Auto")
+@Autonomous(name = "2BLUE NEAR AUTO OPEN GATE")
 public class BlueNearAutoGate extends AutoBase {
 
     private static final int SETTLE_MS = 300;
@@ -120,6 +123,7 @@ public class BlueNearAutoGate extends AutoBase {
                         new InstantCommand(() -> tracker.record("COLLECT2_END", follower.getPose(), Paths.COLLECT2_END_POSE)),
 
                         new InstantCommand(() -> {
+                            follower.setMaxPower(NORMAL_SPEED);
                             setFlywheelVelocity(Constants.Flywheel.VELOCITY_MEDIUM);
                             hoodServo.setPosition(Constants.Hood.MEDIUM);
                         }),
@@ -160,12 +164,12 @@ public class BlueNearAutoGate extends AutoBase {
 
     public static class Paths {
 
-        static final Pose SPIKE_APPROACH_POSE    = FieldMirror.mirror(new Pose(98, 79,  Math.toRadians(0)));
-        static final Pose SPIKE_SWEEP_POSE       = FieldMirror.mirror(new Pose(123, 79,  Math.toRadians(0)));
-        static final Pose SPIKE_COLLECT_END_POSE = FieldMirror.mirror(new Pose(123, 71,    Math.toRadians(0)));
-        static final Pose COLLECT2_OUT_POSE      = FieldMirror.mirror(new Pose(96, 56,    Math.toRadians(0)));
-        static final Pose COLLECT2_END_POSE      = FieldMirror.mirror(new Pose(123, 56,    Math.toRadians(0)));
-        static final Pose PARK_POSE              = FieldMirror.mirror(new Pose(124,     50,    Math.toRadians(45)));
+        static final Pose SPIKE_APPROACH_POSE    = FieldMirror.mirror(new Pose(96,  79, Math.toRadians(0)));
+        static final Pose SPIKE_SWEEP_POSE       = FieldMirror.mirror(new Pose(123, 79, Math.toRadians(0)));
+        static final Pose SPIKE_COLLECT_END_POSE = FieldMirror.mirror(new Pose(123, 67, Math.toRadians(0)));
+        static final Pose COLLECT2_OUT_POSE      = FieldMirror.mirror(new Pose(94,  58, Math.toRadians(0)));
+        static final Pose COLLECT2_END_POSE      = FieldMirror.mirror(new Pose(123, 56, Math.toRadians(0)));
+        static final Pose PARK_POSE              = FieldMirror.mirror(new Pose(124, 50, Math.toRadians(45)));
 
         public PathChain Preloadshoot;
         public PathChain SpikeApproach;
@@ -198,7 +202,6 @@ public class BlueNearAutoGate extends AutoBase {
                     .setLinearHeadingInterpolation(SPIKE_APPROACH_POSE.getHeading(), SPIKE_SWEEP_POSE.getHeading())
                     .build();
 
-            // ── Added: mirrored SpikeCollectEnd ──
             SpikeCollectEnd = follower.pathBuilder()
                     .addPath(new BezierCurve(
                             SPIKE_SWEEP_POSE,
@@ -234,6 +237,8 @@ public class BlueNearAutoGate extends AutoBase {
                     .setTangentHeadingInterpolation()
                     .build();
 
+            // ── Collect2End removed — Collect2Sweep now ends at COLLECT2_END_POSE directly ──
+
             Collect2ReturnShoot = follower.pathBuilder()
                     .addPath(new BezierCurve(
                             COLLECT2_END_POSE,
@@ -252,5 +257,3 @@ public class BlueNearAutoGate extends AutoBase {
         }
     }
 }
-
-

@@ -47,7 +47,7 @@ import gcsrobotics.vertices.SleepCommand;
 // ═══════════════════════════════════════════════════════════════════════════
 
 
-@Autonomous(name = "-RED FAR AUTO-SPIKE COLLECT")
+@Autonomous(name = "1RED FAR AUTO-SPIKE COLLECT")
 public class RedFarAuto extends AutoBase {
 
     // ─────────────────────────────────────────────────────────────────────

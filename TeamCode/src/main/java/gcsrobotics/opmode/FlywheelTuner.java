@@ -1,5 +1,6 @@
 package gcsrobotics.opmode;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import gcsrobotics.commands.SetHoodAngle;
@@ -39,7 +40,7 @@ import gcsrobotics.vertices.SeriesCommand;
 //   D-pad up         → Increase P by current step
 //   X                → Cycle step size (10 → 1 → 0.1 → 0.01)
 // =====================================================
-
+@Disabled
 @TeleOp(name = "Flywheel Tuner", group = "Tuning")
 public class FlywheelTuner extends TeleOpBase {
 

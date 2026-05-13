@@ -18,7 +18,7 @@ import gcsrobotics.vertices.InstantCommand;
 import gcsrobotics.vertices.ParallelCommand;
 import gcsrobotics.vertices.SeriesCommand;
 
-@TeleOp(name = "-BLUE FAR TELEOP", group = "Hilda")
+@TeleOp(name = "2BLUE FAR TELEOP")
 public class BlueTeleopGearmo extends TeleOpBase {
 
     // ============================================================

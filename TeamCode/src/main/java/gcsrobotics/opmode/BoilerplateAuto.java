@@ -2,7 +2,6 @@ package gcsrobotics.opmode;
 
 import gcsrobotics.control.AutoBase;
 import gcsrobotics.vertices.Command;
-
 public class BoilerplateAuto extends AutoBase {
 
     // Name your commands based on what that command actually does, eg. `shoot`
